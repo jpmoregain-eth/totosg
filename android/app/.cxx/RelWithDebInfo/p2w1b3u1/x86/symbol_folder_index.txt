@@ -1,0 +1,1 @@
+/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/RelWithDebInfo/p2w1b3u1/obj/x86

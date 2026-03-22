@@ -1,0 +1,86 @@
+{
+  "buildFiles": [
+    "/home/ubuntu/TotoSG/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-google-mobile-ads/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-pager-view/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/home/ubuntu/Android/Sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/arm64-v8a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/home/ubuntu/Android/Sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/arm64-v8a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "appmodules::@6890427a1f51a3e7e1df": {
+      "toolchain": "toolchain",
+      "abi": "arm64-v8a",
+      "artifactName": "appmodules",
+      "output": "/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/RelWithDebInfo/p2w1b3u1/obj/arm64-v8a/libappmodules.so",
+      "runtimeFiles": [
+        "/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/RelWithDebInfo/p2w1b3u1/obj/arm64-v8a/libreact_codegen_safeareacontext.so",
+        "/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/RelWithDebInfo/p2w1b3u1/obj/arm64-v8a/libreact_codegen_rnscreens.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.arm64-v8a/libfbjni.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/jsi/libs/android.arm64-v8a/libjsi.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so"
+      ]
+    },
+    "react_codegen_RNGoogleMobileAdsSpec::@c00c605517d10bc7886c": {
+      "toolchain": "toolchain",
+      "abi": "arm64-v8a",
+      "artifactName": "react_codegen_RNGoogleMobileAdsSpec"
+    },
+    "react_codegen_pagerview::@7032a8921530ec438d60": {
+      "toolchain": "toolchain",
+      "abi": "arm64-v8a",
+      "artifactName": "react_codegen_pagerview"
+    },
+    "react_codegen_rnasyncstorage::@1596841e19ec5b9eeffe": {
+      "toolchain": "toolchain",
+      "abi": "arm64-v8a",
+      "artifactName": "react_codegen_rnasyncstorage"
+    },
+    "react_codegen_rnscreens::@25bcbd507e98d3a854ad": {
+      "toolchain": "toolchain",
+      "abi": "arm64-v8a",
+      "artifactName": "react_codegen_rnscreens",
+      "output": "/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/RelWithDebInfo/p2w1b3u1/obj/arm64-v8a/libreact_codegen_rnscreens.so",
+      "runtimeFiles": [
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/jsi/libs/android.arm64-v8a/libjsi.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.arm64-v8a/libfbjni.so"
+      ]
+    },
+    "react_codegen_safeareacontext::@7984cd80db47aa7b952a": {
+      "toolchain": "toolchain",
+      "abi": "arm64-v8a",
+      "artifactName": "react_codegen_safeareacontext",
+      "output": "/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/RelWithDebInfo/p2w1b3u1/obj/arm64-v8a/libreact_codegen_safeareacontext.so",
+      "runtimeFiles": [
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.arm64-v8a/libfbjni.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/jsi/libs/android.arm64-v8a/libjsi.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so"
+      ]
+    }
+  },
+  "toolchains": {
+    "toolchain": {
+      "cCompilerExecutable": "/home/ubuntu/Android/Sdk/ndk/27.1.12297006/toolchains/llvm/prebuilt/linux-x86_64/bin/clang.lld",
+      "cppCompilerExecutable": "/home/ubuntu/Android/Sdk/ndk/27.1.12297006/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++.lld"
+    }
+  },
+  "cFileExtensions": [],
+  "cppFileExtensions": [
+    "cpp"
+  ]
+}

@@ -1,0 +1,1 @@
+/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/Debug/5b53l70n/obj/x86

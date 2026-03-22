@@ -1,0 +1,73 @@
+{
+  "buildFiles": [
+    "/home/ubuntu/TotoSG/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-google-mobile-ads/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-pager-view/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/home/ubuntu/Android/Sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/armeabi-v7a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/home/ubuntu/Android/Sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/armeabi-v7a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "react_codegen_safeareacontext::@7984cd80db47aa7b952a": {
+      "artifactName": "react_codegen_safeareacontext",
+      "abi": "armeabi-v7a",
+      "output": "/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/Debug/5b53l70n/obj/armeabi-v7a/libreact_codegen_safeareacontext.so",
+      "runtimeFiles": [
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.armeabi-v7a/libfbjni.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/jsi/libs/android.armeabi-v7a/libjsi.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/reactnative/libs/android.armeabi-v7a/libreactnative.so"
+      ]
+    },
+    "react_codegen_pagerview::@7032a8921530ec438d60": {
+      "artifactName": "react_codegen_pagerview",
+      "abi": "armeabi-v7a",
+      "runtimeFiles": []
+    },
+    "react_codegen_rnscreens::@25bcbd507e98d3a854ad": {
+      "artifactName": "react_codegen_rnscreens",
+      "abi": "armeabi-v7a",
+      "output": "/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/Debug/5b53l70n/obj/armeabi-v7a/libreact_codegen_rnscreens.so",
+      "runtimeFiles": [
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/reactnative/libs/android.armeabi-v7a/libreactnative.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/jsi/libs/android.armeabi-v7a/libjsi.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.armeabi-v7a/libfbjni.so"
+      ]
+    },
+    "appmodules::@6890427a1f51a3e7e1df": {
+      "artifactName": "appmodules",
+      "abi": "armeabi-v7a",
+      "output": "/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/Debug/5b53l70n/obj/armeabi-v7a/libappmodules.so",
+      "runtimeFiles": [
+        "/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/Debug/5b53l70n/obj/armeabi-v7a/libreact_codegen_safeareacontext.so",
+        "/home/ubuntu/TotoSG/android/app/build/intermediates/cxx/Debug/5b53l70n/obj/armeabi-v7a/libreact_codegen_rnscreens.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.armeabi-v7a/libfbjni.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/jsi/libs/android.armeabi-v7a/libjsi.so",
+        "/home/ubuntu/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/reactnative/libs/android.armeabi-v7a/libreactnative.so"
+      ]
+    },
+    "react_codegen_RNGoogleMobileAdsSpec::@c00c605517d10bc7886c": {
+      "artifactName": "react_codegen_RNGoogleMobileAdsSpec",
+      "abi": "armeabi-v7a",
+      "runtimeFiles": []
+    },
+    "react_codegen_rnasyncstorage::@1596841e19ec5b9eeffe": {
+      "artifactName": "react_codegen_rnasyncstorage",
+      "abi": "armeabi-v7a",
+      "runtimeFiles": []
+    }
+  }
+}
