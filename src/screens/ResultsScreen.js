@@ -4,9 +4,14 @@ import {
   ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 const DARK = '#1a1a2e';
 const ORANGE = '#FF6B35';
+
+const BANNER_ID = __DEV__
+  ? TestIds.BANNER
+  : 'ca-app-pub-6984775309510247/2111888204';
 
 export default function ResultsScreen() {
   const [draw, setDraw] = useState(null);
@@ -99,6 +104,14 @@ export default function ResultsScreen() {
           </View>
         ))}
       </View>
+
+      <View style={styles.bannerContainer}>
+        <BannerAd
+          unitId={BANNER_ID}
+          size={BannerAdSize.BANNER}
+          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -123,4 +136,5 @@ const styles = StyleSheet.create({
   tableHead: { fontSize: 11, color: '#999', fontWeight: '500' },
   tableRow: { flexDirection: 'row', paddingVertical: 9, borderBottomWidth: 0.5, borderColor: '#f0f0f0' },
   tableCell: { fontSize: 13, color: '#222' },
+  bannerContainer: { alignItems: 'center', paddingVertical: 12 },
 });

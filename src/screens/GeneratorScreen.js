@@ -4,6 +4,7 @@ import {
   TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile-ads';
 
 const DARK = '#1a1a2e';
@@ -12,7 +13,6 @@ const RED = '#E24B4A';
 const BLUE = '#185FA5';
 const PURPLE = '#534AB7';
 
-// Switch to real ID when going live
 const AD_UNIT_ID = __DEV__
   ? TestIds.INTERSTITIAL
   : 'ca-app-pub-6984775309510247/5548935293';
@@ -45,6 +45,11 @@ function pickNumbers(draws, temp, count = 6) {
     const cold = sorted.slice(-20).map(x => parseInt(x[0]));
     return shuffle([...hot, ...cold]).slice(0, count).sort((a, b) => a - b);
   }
+  if (temp === 'Coldest') {
+    const appeared = sorted.filter(x => x[1] > 0);
+    const pool = appeared.length >= count ? appeared : sorted;
+    return pool.slice(0, count).map(x => parseInt(x[0])).sort((a, b) => a - b);
+  }
   return sorted.slice(0, count).map(x => parseInt(x[0])).sort((a, b) => a - b);
 }
 
@@ -54,9 +59,53 @@ function pickAdditional(draws, mainNums, temp) {
   draws.forEach(d => { if (d.additional) freq[d.additional]++; });
   const candidates = Object.entries(freq)
     .filter(([n]) => !mainNums.includes(parseInt(n)))
-    .sort((a, b) => temp === 'Coldest' ? a[1] - b[1] : b[1] - a[1]);
-  if (temp === 'Balanced') return parseInt(candidates[Math.floor(candidates.length / 2)][0]);
-  return parseInt(candidates[0][0]);
+    .filter(([n, count]) => count > 0)
+    .sort((a, b) => {
+      const diff = temp === 'Coldest' ? a[1] - b[1] : b[1] - a[1];
+      return diff !== 0 ? diff : Math.random() - 0.5;
+    });
+  const pool = candidates.length > 0 ? candidates : Object.entries(freq)
+    .filter(([n]) => !mainNums.includes(parseInt(n)))
+    .sort(() => Math.random() - 0.5);
+  if (temp === 'Balanced') return parseInt(pool[Math.floor(pool.length / 2)][0]);
+  return parseInt(pool[0][0]);
+}
+
+function positionalBias(draws) {
+  if (!draws || draws.length < 10) return null;
+  const positional = [[], [], [], [], [], []];
+  draws.forEach(d => {
+    [d.n1, d.n2, d.n3, d.n4, d.n5, d.n6].forEach((n, i) => {
+      const num = parseInt(n);
+      if (num && !isNaN(num) && num >= 1 && num <= 49) {
+        positional[i].push(num);
+      }
+    });
+  });
+  const picked = new Set();
+  const result = [];
+  for (let i = 0; i < 6; i++) {
+    const pos = positional[i];
+    let chosen = null;
+    if (pos.length > 0) {
+      const freq = {};
+      pos.forEach(n => { freq[n] = (freq[n] || 0) + 1; });
+      const sorted = Object.entries(freq).sort((a, b) => {
+        const diff = b[1] - a[1];
+        return diff !== 0 ? diff : Math.random() - 0.5;
+      });
+      for (const [n] of sorted) {
+        const num = parseInt(n);
+        if (!picked.has(num)) { chosen = num; break; }
+      }
+    }
+    if (!chosen) {
+      chosen = Array.from({length: 49}, (_, j) => j + 1).find(n => !picked.has(n));
+    }
+    picked.add(chosen);
+    result.push(chosen);
+  }
+  return result.sort((a, b) => a - b);
 }
 
 function generateSet(draws, strategy, temp) {
@@ -88,19 +137,8 @@ function generateSet(draws, strategy, temp) {
     const pool = pickNumbers(draws, temp, 10);
     nums = shuffle(pool).slice(0, 6).sort((a, b) => a - b);
   } else if (strategy === 'Positional Bias') {
-    const positional = [[], [], [], [], [], []];
-    draws.forEach(d => [d.n1, d.n2, d.n3, d.n4, d.n5, d.n6].forEach((n, i) => positional[i].push(n)));
-    const picked = new Set();
-    nums = positional.map(pos => {
-      const freq = {};
-      pos.forEach(n => freq[n] = (freq[n] || 0) + 1);
-      const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
-      for (const [n] of sorted) {
-        if (!picked.has(parseInt(n))) { picked.add(parseInt(n)); return parseInt(n); }
-      }
-      const fallback = Array.from({length: 49}, (_, i) => i + 1).find(n => !picked.has(n));
-      return fallback || pos[0];
-    }).sort((a, b) => a - b);
+    const pbResult = positionalBias(draws);
+    if (pbResult) nums = pbResult;
   }
   return { nums, additional: pickAdditional(draws, nums, temp) };
 }
@@ -134,18 +172,17 @@ export default function GeneratorScreen() {
     };
     fetchData();
 
-    // Preload ad
     const unsubLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
       setAdLoaded(true);
     });
     const unsubClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
       setAdLoaded(false);
-      interstitial.load(); // preload next ad
+      interstitial.load();
       doGenerate();
     });
     const unsubError = interstitial.addAdEventListener(AdEventType.ERROR, () => {
       setAdLoaded(false);
-      doGenerate(); // show numbers anyway if ad fails
+      doGenerate();
     });
 
     interstitial.load();
@@ -170,9 +207,14 @@ export default function GeneratorScreen() {
     setGenerating(false);
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setGenerating(true);
-    if (adLoaded) {
+    const today = new Date().toDateString();
+    const stored = await AsyncStorage.getItem('generate_count');
+    const parsed = stored ? JSON.parse(stored) : { date: today, count: 0 };
+    const count = parsed.date === today ? parsed.count : 0;
+    await AsyncStorage.setItem('generate_count', JSON.stringify({ date: today, count: count + 1 }));
+    if (count < 20 && adLoaded) {
       interstitial.show();
     } else {
       setTimeout(() => doGenerate(), 300);
