@@ -1,23 +1,74 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList,
-  ActivityIndicator, TextInput,
+  ActivityIndicator, TouchableOpacity, Modal, ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 const DARK = '#1a1a2e';
 const ORANGE = '#FF6B35';
 const PAGE_SIZE = 20;
 
+const BANNER_ID = __DEV__
+  ? TestIds.BANNER
+  : 'ca-app-pub-6984775309510247/2111888204';
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const START_YEAR = 1997;
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: CURRENT_YEAR - START_YEAR + 1 }, (_, i) => CURRENT_YEAR - i);
+
+function MonthYearPicker({ visible, onClose, onSelect }) {
+  const [selMonth, setSelMonth] = useState(new Date().getMonth());
+  const [selYear, setSelYear] = useState(new Date().getFullYear());
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={onClose}>
+        <View style={styles.pickerContainer}>
+          <Text style={styles.pickerTitle}>Select Month & Year</Text>
+          <View style={styles.pickerColumns}>
+            <ScrollView style={styles.pickerCol} showsVerticalScrollIndicator={false}>
+              {MONTHS.map((m, i) => (
+                <TouchableOpacity key={m} style={[styles.pickerItem, selMonth === i && styles.pickerItemActive]} onPress={() => setSelMonth(i)}>
+                  <Text style={[styles.pickerItemText, selMonth === i && styles.pickerItemTextActive]}>{m}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <ScrollView style={styles.pickerCol} showsVerticalScrollIndicator={false}>
+              {YEARS.map(y => (
+                <TouchableOpacity key={y} style={[styles.pickerItem, selYear === y && styles.pickerItemActive]} onPress={() => setSelYear(y)}>
+                  <Text style={[styles.pickerItemText, selYear === y && styles.pickerItemTextActive]}>{y}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+          <TouchableOpacity style={styles.pickerBtn} onPress={() => { onSelect(selMonth, selYear); onClose(); }}>
+            <Text style={styles.pickerBtnText}>Show Results</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.pickerClear} onPress={() => { onSelect(null, null); onClose(); }}>
+            <Text style={styles.pickerClearText}>Clear filter</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
 export default function HistoryScreen() {
+  const insets = useSafeAreaInsets();
   const [draws, setDraws] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [filterMonth, setFilterMonth] = useState(null);
+  const [filterYear, setFilterYear] = useState(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
 
-  const fetchDraws = async (pageNum = 0, searchVal = '', append = false) => {
+  const fetchDraws = async (pageNum = 0, month = filterMonth, year = filterYear, append = false) => {
     if (pageNum === 0) setLoading(true);
     else setLoadingMore(true);
 
@@ -27,28 +78,25 @@ export default function HistoryScreen() {
       .order('draw_no', { ascending: false })
       .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
 
-    if (searchVal.trim()) {
-      const val = searchVal.trim();
-      if (/^\d+$/.test(val) && val.length <= 4) {
-        query = supabase
-          .from('toto_draws')
-          .select('*')
-          .eq('draw_no', parseInt(val))
-          .order('draw_no', { ascending: false });
-      } else {
-        query = supabase
-          .from('toto_draws')
-          .select('*')
-          .ilike('draw_date', `%${val}%`)
-          .order('draw_no', { ascending: false })
-          .range(0, PAGE_SIZE - 1);
-      }
+    if (month !== null && year !== null) {
+      const monthStr = String(month + 1).padStart(2, '0');
+      const nextMonth = month === 11 ? 1 : month + 2;
+      const nextYear = month === 11 ? year + 1 : year;
+      const nextMonthStr = String(nextMonth).padStart(2, '0');
+      const dateFrom = `${year}-${monthStr}-01`;
+      const dateTo = `${nextYear}-${nextMonthStr}-01`;
+      query = supabase
+        .from('toto_draws')
+        .select('*')
+        .gte('draw_date', dateFrom)
+        .lt('draw_date', dateTo)
+        .order('draw_no', { ascending: false });
     }
 
     const { data } = await query;
     if (data) {
       setDraws(append ? prev => [...prev, ...data] : data);
-      setHasMore(data.length === PAGE_SIZE);
+      setHasMore(data.length === PAGE_SIZE && month === null);
     }
     setLoading(false);
     setLoadingMore(false);
@@ -56,22 +104,24 @@ export default function HistoryScreen() {
 
   useEffect(() => {
     setPage(0);
-    fetchDraws(0, search, false);
-  }, [search]);
+    fetchDraws(0, filterMonth, filterYear, false);
+  }, [filterMonth, filterYear]);
 
   const loadMore = () => {
-    if (!loadingMore && hasMore && !search.trim()) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchDraws(nextPage, '', true);
+    if (!loadingMore && hasMore && filterMonth === null) {
+      const next = page + 1;
+      setPage(next);
+      fetchDraws(next, null, null, true);
     }
   };
 
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('en-SG', {
-      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-    });
-  };
+  const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-SG', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+  });
+
+  const filterLabel = filterMonth !== null && filterYear !== null
+    ? `${MONTHS[filterMonth]} ${filterYear}`
+    : 'Filter by month';
 
   const renderItem = ({ item }) => {
     const nums = [item.n1, item.n2, item.n3, item.n4, item.n5, item.n6];
@@ -97,16 +147,14 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by date or draw no."
-          placeholderTextColor="#999"
-          value={search}
-          onChangeText={setSearch}
-          clearButtonMode="while-editing"
-        />
-      </View>
+      <TouchableOpacity style={styles.filterBar} onPress={() => setPickerVisible(true)}>
+        <Text style={styles.filterLabel}>📅 {filterLabel}</Text>
+        {filterMonth !== null && (
+          <TouchableOpacity onPress={() => { setFilterMonth(null); setFilterYear(null); }}>
+            <Text style={styles.filterClear}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
 
       {loading ? (
         <View style={styles.center}>
@@ -121,9 +169,19 @@ export default function HistoryScreen() {
           onEndReachedThreshold={0.3}
           ListFooterComponent={loadingMore ? <ActivityIndicator style={{ padding: 16 }} color={DARK} /> : null}
           ListEmptyComponent={<Text style={styles.empty}>No draws found.</Text>}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={{ paddingBottom: 8 }}
         />
       )}
+
+      <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
+        <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
+      </View>
+
+      <MonthYearPicker
+        visible={pickerVisible}
+        onClose={() => setPickerVisible(false)}
+        onSelect={(m, y) => { setFilterMonth(m); setFilterYear(y); }}
+      />
     </View>
   );
 }
@@ -131,8 +189,9 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  searchContainer: { padding: 12, borderBottomWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
-  searchInput: { backgroundColor: '#f5f5f5', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, fontSize: 13, color: '#222' },
+  filterBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
+  filterLabel: { fontSize: 13, color: DARK, fontWeight: '500' },
+  filterClear: { fontSize: 16, color: '#999', paddingHorizontal: 8 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 0.5, borderColor: '#f0f0f0' },
   rowLeft: { flex: 1 },
   rowDate: { fontSize: 12, color: '#555' },
@@ -142,4 +201,19 @@ const styles = StyleSheet.create({
   miniBallAdd: { backgroundColor: ORANGE },
   miniBallText: { color: '#fff', fontSize: 9, fontWeight: '600' },
   empty: { textAlign: 'center', color: '#999', marginTop: 40, fontSize: 14 },
+  bannerContainer: { alignItems: 'center', paddingTop: 6, borderTopWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
+  // Picker
+  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  pickerContainer: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '80%', maxHeight: '70%' },
+  pickerTitle: { fontSize: 16, fontWeight: '600', color: DARK, textAlign: 'center', marginBottom: 16 },
+  pickerColumns: { flexDirection: 'row', height: 200 },
+  pickerCol: { flex: 1 },
+  pickerItem: { paddingVertical: 10, alignItems: 'center', borderRadius: 8, marginVertical: 2 },
+  pickerItemActive: { backgroundColor: DARK },
+  pickerItemText: { fontSize: 14, color: '#555' },
+  pickerItemTextActive: { color: '#fff', fontWeight: '600' },
+  pickerBtn: { backgroundColor: DARK, borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 16 },
+  pickerBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  pickerClear: { alignItems: 'center', marginTop: 10 },
+  pickerClearText: { color: '#999', fontSize: 13 },
 });

@@ -3,9 +3,10 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { InterstitialAd, AdEventType, TestIds, BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
 
 const DARK = '#1a1a2e';
 const ORANGE = '#FF6B35';
@@ -16,6 +17,10 @@ const PURPLE = '#534AB7';
 const AD_UNIT_ID = __DEV__
   ? TestIds.INTERSTITIAL
   : 'ca-app-pub-6984775309510247/5548935293';
+
+const BANNER_ID = __DEV__
+  ? TestIds.BANNER
+  : 'ca-app-pub-6984775309510247/2111888204';
 
 const interstitial = InterstitialAd.createForAdRequest(AD_UNIT_ID, {
   requestNonPersonalizedAdsOnly: true,
@@ -150,6 +155,7 @@ function getTempColor(temp) {
 }
 
 export default function GeneratorScreen() {
+  const insets = useSafeAreaInsets();
   const [allDraws, setAllDraws] = useState({});
   const [sets, setSets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -172,9 +178,7 @@ export default function GeneratorScreen() {
     };
     fetchData();
 
-    const unsubLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
-      setAdLoaded(true);
-    });
+    const unsubLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => setAdLoaded(true));
     const unsubClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
       setAdLoaded(false);
       interstitial.load();
@@ -184,14 +188,8 @@ export default function GeneratorScreen() {
       setAdLoaded(false);
       doGenerate();
     });
-
     interstitial.load();
-
-    return () => {
-      unsubLoaded();
-      unsubClosed();
-      unsubError();
-    };
+    return () => { unsubLoaded(); unsubClosed(); unsubError(); };
   }, []);
 
   const doGenerate = () => {
@@ -228,50 +226,61 @@ export default function GeneratorScreen() {
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
-      <Text style={styles.sectionLabel}>Suggested sets</Text>
+    <View style={styles.wrapper}>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+        <Text style={styles.sectionLabel}>Suggested sets</Text>
 
-      {sets.length === 0 && (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>Tap Generate to get your lucky numbers</Text>
-        </View>
-      )}
-
-      {sets.map((set, idx) => (
-        <View key={idx} style={styles.card}>
-          <Text style={styles.cardLabel}>
-            <Text style={{ color: getTempColor(set.temp), fontWeight: '600' }}>
-              {set.strategy} · {set.temp}
-            </Text>
-            <Text style={{ color: '#999' }}> · last {set.window} draws</Text>
-          </Text>
-          <View style={styles.numsRow}>
-            {set.nums.map((n, i) => (
-              <View key={i} style={[styles.ball, { backgroundColor: getTempColor(set.temp) }]}>
-                <Text style={styles.ballText}>{n}</Text>
-              </View>
-            ))}
+        {sets.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Tap Generate to get your lucky numbers</Text>
           </View>
-          <View style={styles.addRow}>
-            <View style={[styles.ball, { backgroundColor: ORANGE }]}>
-              <Text style={styles.ballText}>{set.additional}</Text>
+        )}
+
+        {sets.map((set, idx) => (
+          <View key={idx} style={styles.card}>
+            <Text style={styles.cardLabel}>
+              <Text style={{ color: getTempColor(set.temp), fontWeight: '600' }}>
+                {set.strategy} · {set.temp}
+              </Text>
+              <Text style={{ color: '#999' }}> · last {set.window} draws</Text>
+            </Text>
+            <View style={styles.numsRow}>
+              {set.nums.map((n, i) => (
+                <View key={i} style={[styles.ball, { backgroundColor: getTempColor(set.temp) }]}>
+                  <Text style={styles.ballText}>{n}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.addRow}>
+              <View style={[styles.ball, { backgroundColor: ORANGE }]}>
+                <Text style={styles.ballText}>{set.additional}</Text>
+              </View>
             </View>
           </View>
-        </View>
-      ))}
+        ))}
 
-      <TouchableOpacity style={styles.btn} onPress={handleGenerate} disabled={generating}>
-        {generating
-          ? <ActivityIndicator color="#fff" />
-          : <Text style={styles.btnText}>Generate new sets</Text>
-        }
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity style={styles.btn} onPress={handleGenerate} disabled={generating}>
+          {generating
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.btnText}>Generate new sets</Text>
+          }
+        </TouchableOpacity>
+      </ScrollView>
+
+      <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
+        <BannerAd
+          unitId={BANNER_ID}
+          size={BannerAdSize.BANNER}
+          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+        />
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  wrapper: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   sectionLabel: { fontSize: 14, fontWeight: '500', color: '#111', marginBottom: 12 },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
@@ -282,6 +291,7 @@ const styles = StyleSheet.create({
   ball: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   ballText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   addRow: { alignItems: 'center' },
-  btn: { backgroundColor: DARK, borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 4 },
+  btn: { backgroundColor: DARK, borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 4, marginBottom: 16 },
   btnText: { color: '#fff', fontSize: 14, fontWeight: '500' },
+  bannerContainer: { alignItems: 'center', paddingTop: 6, borderTopWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
 });

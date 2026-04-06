@@ -1,24 +1,54 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 import ResultsScreen from './src/screens/ResultsScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import GeneratorScreen from './src/screens/GeneratorScreen';
+import FourdResultsScreen from './src/screens/FourdResultsScreen';
+import FourdHistoryScreen from './src/screens/FourdHistoryScreen';
+import FourdGeneratorScreen from './src/screens/FourdGeneratorScreen';
 
 const Tab = createMaterialTopTabNavigator();
 const DARK = '#1a1a2e';
 const PURPLE = '#7c6ff7';
+const GOLD = '#C9A84C';
+
+function GameSwitcher({ game, setGame }) {
+  return (
+    <View style={styles.switcherContainer}>
+      <TouchableOpacity
+        style={[styles.switcherBtn, game === '4D' && styles.switcherActive]}
+        onPress={() => setGame('4D')}
+      >
+        <Text style={[styles.switcherText, game === '4D' && styles.switcherTextActive]}>4D</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.switcherBtn, game === 'TOTO' && styles.switcherActive]}
+        onPress={() => setGame('TOTO')}
+      >
+        <Text style={[styles.switcherText, game === 'TOTO' && styles.switcherTextActive]}>TOTO</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 export default function App() {
+  const [game, setGame] = useState('4D');
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.appHeader}>
-          <Text style={styles.appTitle}>TOTO SG</Text>
-          <Text style={styles.appSubtitle}>Singapore Pools Results</Text>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.appTitle}>SG Lottery</Text>
+              <Text style={styles.appSubtitle}>Singapore Pools Results</Text>
+            </View>
+            <GameSwitcher game={game} setGame={setGame} />
+          </View>
         </View>
         <NavigationContainer>
           <Tab.Navigator
@@ -31,9 +61,19 @@ export default function App() {
               tabBarPressColor: 'rgba(255,255,255,0.1)',
             }}
           >
-            <Tab.Screen name="Results" component={ResultsScreen} />
-            <Tab.Screen name="History" component={HistoryScreen} />
-            <Tab.Screen name="Generator" component={GeneratorScreen} />
+            {game === '4D' ? (
+              <>
+                <Tab.Screen name="Results" component={FourdResultsScreen} />
+                <Tab.Screen name="History" component={FourdHistoryScreen} />
+                <Tab.Screen name="Generator" component={FourdGeneratorScreen} />
+              </>
+            ) : (
+              <>
+                <Tab.Screen name="Results" component={ResultsScreen} />
+                <Tab.Screen name="History" component={HistoryScreen} />
+                <Tab.Screen name="Generator" component={GeneratorScreen} />
+              </>
+            )}
           </Tab.Navigator>
         </NavigationContainer>
       </SafeAreaView>
@@ -44,6 +84,17 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: DARK },
   appHeader: { backgroundColor: DARK, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   appTitle: { color: '#fff', fontSize: 20, fontWeight: '600' },
   appSubtitle: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 2 },
+  switcherContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20,
+    padding: 3,
+  },
+  switcherBtn: { paddingHorizontal: 16, paddingVertical: 5, borderRadius: 17 },
+  switcherActive: { backgroundColor: GOLD },
+  switcherText: { color: 'rgba(255,255,255,0.5)', fontWeight: '600', fontSize: 13 },
+  switcherTextActive: { color: '#fff' },
 });
