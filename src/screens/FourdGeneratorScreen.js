@@ -91,6 +91,7 @@ function generate4D(draws, strategy, temp) {
       if (sum >= 3000 && sum <= 7000) return candidates.map(n => pad(n));
       attempts++;
     }
+    return shuffle(pool).slice(0, 3).map(x => pad(parseInt(x[0])));
   }
 
   if (strategy === 'Odd/Even') {
@@ -101,6 +102,7 @@ function generate4D(draws, strategy, temp) {
       if (odds === 1 || odds === 2) return candidates.map(n => pad(n));
       attempts++;
     }
+    return shuffle(sorted.slice(0, 3)).map(x => pad(parseInt(x[0])));
   }
 
   // Frequency / Cold Numbers / fallback
@@ -124,6 +126,7 @@ export default function FourdGeneratorScreen() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [adLoaded, setAdLoaded] = useState(false);
+  const doGenerateRef = React.useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -145,17 +148,17 @@ export default function FourdGeneratorScreen() {
     const unsubClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
       setAdLoaded(false);
       interstitial.load();
-      doGenerate();
+      doGenerateRef.current();
     });
     const unsubError = interstitial.addAdEventListener(AdEventType.ERROR, () => {
       setAdLoaded(false);
-      doGenerate();
+      doGenerateRef.current();
     });
     interstitial.load();
     return () => { unsubLoaded(); unsubClosed(); unsubError(); };
   }, []);
 
-  const doGenerate = () => {
+  const doGenerate = React.useCallback(() => {
     const newSets = Array.from({ length: 5 }, () => {
       const strategy = pickRandom(STRATEGIES);
       const temp = pickRandom(TEMPS);
@@ -166,7 +169,11 @@ export default function FourdGeneratorScreen() {
     });
     setSets(newSets);
     setGenerating(false);
-  };
+  }, [allDraws]);
+
+  React.useEffect(() => {
+    doGenerateRef.current = doGenerate;
+  }, [doGenerate]);
 
   const handleGenerate = async () => {
     setGenerating(true);
