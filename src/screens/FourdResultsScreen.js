@@ -6,9 +6,10 @@ import {
 import { supabase } from '../lib/supabase';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLang } from '../lib/LangContext';
+import { tr } from '../lib/i18n';
 
 const DARK = '#1a1a2e';
-const ORANGE = '#FF6B35';
 const GOLD = '#C9A84C';
 
 const BANNER_ID = __DEV__
@@ -17,6 +18,7 @@ const BANNER_ID = __DEV__
 
 export default function FourdResultsScreen() {
   const insets = useSafeAreaInsets();
+  const { lang } = useLang();
   const [draw, setDraw] = useState(null);
   const [prizes, setPrizes] = useState({ starters: [], consolations: [] });
   const [loading, setLoading] = useState(true);
@@ -80,19 +82,17 @@ export default function FourdResultsScreen() {
         style={styles.container}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.badge}>
             <View style={styles.badgeDot} />
-            <Text style={styles.badgeText}>Draw #{draw?.draw_no} · {dateStr}</Text>
+            <Text style={styles.badgeText}>{tr('drawNo', lang)} {draw?.draw_no} · {dateStr}</Text>
           </View>
 
-          {/* Top 3 Prizes */}
           <View style={styles.topPrizesRow}>
             {[
-              { label: '1st', value: draw?.prize_1st, color: GOLD },
-              { label: '2nd', value: draw?.prize_2nd, color: '#C0C0C0' },
-              { label: '3rd', value: draw?.prize_3rd, color: '#CD7F32' },
+              { label: tr('prize1st', lang), value: draw?.prize_1st, color: GOLD },
+              { label: tr('prize2nd', lang), value: draw?.prize_2nd, color: '#C0C0C0' },
+              { label: tr('prize3rd', lang), value: draw?.prize_3rd, color: '#CD7F32' },
             ].map((p) => (
               <View key={p.label} style={styles.prizeBox}>
                 <Text style={[styles.prizeLabel, { color: p.color }]}>{p.label}</Text>
@@ -102,28 +102,21 @@ export default function FourdResultsScreen() {
           </View>
         </View>
 
-        {/* Starters */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Starter Prizes</Text>
+          <Text style={styles.sectionTitle}>{tr('starter', lang)}</Text>
           {renderGrid(prizes.starters, '#185FA5')}
         </View>
 
-        {/* Consolations */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Consolation Prizes</Text>
+          <Text style={styles.sectionTitle}>{tr('consolation', lang)}</Text>
           {renderGrid(prizes.consolations, '#534AB7')}
         </View>
 
         <View style={{ height: 16 }} />
       </ScrollView>
 
-      {/* Sticky Banner */}
       <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd
-          unitId={BANNER_ID}
-          size={BannerAdSize.BANNER}
-          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-        />
+        <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
       </View>
     </View>
   );

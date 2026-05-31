@@ -6,6 +6,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { useLang } from '../lib/LangContext';
+import { tr } from '../lib/i18n';
 
 const DARK = '#1a1a2e';
 const ORANGE = '#FF6B35';
@@ -15,20 +17,22 @@ const BANNER_ID = __DEV__
   ? TestIds.BANNER
   : 'ca-app-pub-6984775309510247/2111888204';
 
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_ZH = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 const START_YEAR = 1997;
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR - START_YEAR + 1 }, (_, i) => CURRENT_YEAR - i);
 
-function MonthYearPicker({ visible, onClose, onSelect }) {
+function MonthYearPicker({ visible, onClose, onSelect, lang }) {
   const [selMonth, setSelMonth] = useState(new Date().getMonth());
   const [selYear, setSelYear] = useState(new Date().getFullYear());
+  const MONTHS = lang === 'ZH' ? MONTHS_ZH : MONTHS_EN;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={onClose}>
         <View style={styles.pickerContainer}>
-          <Text style={styles.pickerTitle}>Select Month & Year</Text>
+          <Text style={styles.pickerTitle}>{lang === 'ZH' ? '选择月份与年份' : 'Select Month & Year'}</Text>
           <View style={styles.pickerColumns}>
             <ScrollView style={styles.pickerCol} showsVerticalScrollIndicator={false}>
               {MONTHS.map((m, i) => (
@@ -46,10 +50,10 @@ function MonthYearPicker({ visible, onClose, onSelect }) {
             </ScrollView>
           </View>
           <TouchableOpacity style={styles.pickerBtn} onPress={() => { onSelect(selMonth, selYear); onClose(); }}>
-            <Text style={styles.pickerBtnText}>Show Results</Text>
+            <Text style={styles.pickerBtnText}>{lang === 'ZH' ? '显示成绩' : 'Show Results'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.pickerClear} onPress={() => { onSelect(null, null); onClose(); }}>
-            <Text style={styles.pickerClearText}>Clear filter</Text>
+            <Text style={styles.pickerClearText}>{lang === 'ZH' ? '清除筛选' : 'Clear filter'}</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -59,6 +63,8 @@ function MonthYearPicker({ visible, onClose, onSelect }) {
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
+  const { lang } = useLang();
+  const MONTHS = lang === 'ZH' ? MONTHS_ZH : MONTHS_EN;
   const [draws, setDraws] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -69,73 +75,49 @@ export default function HistoryScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
 
   const fetchDraws = async (pageNum = 0, month = filterMonth, year = filterYear, append = false) => {
-    if (pageNum === 0) setLoading(true);
-    else setLoadingMore(true);
-
-    let query = supabase
-      .from('toto_draws')
-      .select('*')
-      .order('draw_no', { ascending: false })
+    if (pageNum === 0) setLoading(true); else setLoadingMore(true);
+    let query = supabase.from('toto_draws').select('*').order('draw_no', { ascending: false })
       .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
-
     if (month !== null && year !== null) {
       const monthStr = String(month + 1).padStart(2, '0');
       const nextMonth = month === 11 ? 1 : month + 2;
       const nextYear = month === 11 ? year + 1 : year;
       const nextMonthStr = String(nextMonth).padStart(2, '0');
-      const dateFrom = `${year}-${monthStr}-01`;
-      const dateTo = `${nextYear}-${nextMonthStr}-01`;
-      query = supabase
-        .from('toto_draws')
-        .select('*')
-        .gte('draw_date', dateFrom)
-        .lt('draw_date', dateTo)
+      query = supabase.from('toto_draws').select('*')
+        .gte('draw_date', `${year}-${monthStr}-01`).lt('draw_date', `${nextYear}-${nextMonthStr}-01`)
         .order('draw_no', { ascending: false });
     }
-
     const { data } = await query;
     if (data) {
       setDraws(append ? prev => [...prev, ...data] : data);
       setHasMore(data.length === PAGE_SIZE && month === null);
     }
-    setLoading(false);
-    setLoadingMore(false);
+    setLoading(false); setLoadingMore(false);
   };
 
-  useEffect(() => {
-    setPage(0);
-    fetchDraws(0, filterMonth, filterYear, false);
-  }, [filterMonth, filterYear]);
+  useEffect(() => { setPage(0); fetchDraws(0, filterMonth, filterYear, false); }, [filterMonth, filterYear]);
 
   const loadMore = () => {
     if (!loadingMore && hasMore && filterMonth === null) {
-      const next = page + 1;
-      setPage(next);
-      fetchDraws(next, null, null, true);
+      const next = page + 1; setPage(next); fetchDraws(next, null, null, true);
     }
   };
 
-  const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-SG', {
-    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-  });
-
   const filterLabel = filterMonth !== null && filterYear !== null
     ? `${MONTHS[filterMonth]} ${filterYear}`
-    : 'Filter by month';
+    : (lang === 'ZH' ? '按月筛选' : 'Filter by month');
 
   const renderItem = ({ item }) => {
     const nums = [item.n1, item.n2, item.n3, item.n4, item.n5, item.n6];
     return (
       <View style={styles.row}>
         <View style={styles.rowLeft}>
-          <Text style={styles.rowDate}>{formatDate(item.draw_date)}</Text>
-          <Text style={styles.rowDraw}>Draw #{item.draw_no}</Text>
+          <Text style={styles.rowDate}>{new Date(item.draw_date).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</Text>
+          <Text style={styles.rowDraw}>{tr('drawNo', lang)} {item.draw_no}</Text>
         </View>
         <View style={styles.numsRow}>
           {nums.map((n, i) => (
-            <View key={i} style={styles.miniBall}>
-              <Text style={styles.miniBallText}>{n}</Text>
-            </View>
+            <View key={i} style={styles.miniBall}><Text style={styles.miniBallText}>{n}</Text></View>
           ))}
           <View style={[styles.miniBall, styles.miniBallAdd]}>
             <Text style={styles.miniBallText}>{item.additional}</Text>
@@ -155,11 +137,8 @@ export default function HistoryScreen() {
           </TouchableOpacity>
         )}
       </TouchableOpacity>
-
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={DARK} />
-        </View>
+        <View style={styles.center}><ActivityIndicator size="large" color={DARK} /></View>
       ) : (
         <FlatList
           data={draws}
@@ -168,20 +147,15 @@ export default function HistoryScreen() {
           onEndReached={loadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={loadingMore ? <ActivityIndicator style={{ padding: 16 }} color={DARK} /> : null}
-          ListEmptyComponent={<Text style={styles.empty}>No draws found.</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>{tr('noResults', lang)}</Text>}
           contentContainerStyle={{ paddingBottom: 8 }}
         />
       )}
-
       <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
         <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
       </View>
-
-      <MonthYearPicker
-        visible={pickerVisible}
-        onClose={() => setPickerVisible(false)}
-        onSelect={(m, y) => { setFilterMonth(m); setFilterYear(y); }}
-      />
+      <MonthYearPicker visible={pickerVisible} onClose={() => setPickerVisible(false)}
+        onSelect={(m, y) => { setFilterMonth(m); setFilterYear(y); }} lang={lang} />
     </View>
   );
 }
@@ -202,7 +176,6 @@ const styles = StyleSheet.create({
   miniBallText: { color: '#fff', fontSize: 9, fontWeight: '600' },
   empty: { textAlign: 'center', color: '#999', marginTop: 40, fontSize: 14 },
   bannerContainer: { alignItems: 'center', paddingTop: 6, borderTopWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
-  // Picker
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   pickerContainer: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '80%', maxHeight: '70%' },
   pickerTitle: { fontSize: 16, fontWeight: '600', color: DARK, textAlign: 'center', marginBottom: 16 },

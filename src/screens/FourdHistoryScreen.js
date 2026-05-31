@@ -6,22 +6,33 @@ import {
 import { supabase } from '../lib/supabase';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLang } from '../lib/LangContext';
+import { tr } from '../lib/i18n';
 
 const DARK = '#1a1a2e';
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const GOLD = '#C9A84C';
+const PAGE_SIZE = 20;
+
+const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_ZH = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 const START_YEAR = 1986;
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR - START_YEAR + 1 }, (_, i) => CURRENT_YEAR - i);
 
-function MonthYearPicker({ visible, onClose, onSelect }) {
+const BANNER_ID = __DEV__
+  ? TestIds.BANNER
+  : 'ca-app-pub-6984775309510247/2111888204';
+
+function MonthYearPicker({ visible, onClose, onSelect, lang }) {
   const [selMonth, setSelMonth] = React.useState(new Date().getMonth());
   const [selYear, setSelYear] = React.useState(new Date().getFullYear());
+  const MONTHS = lang === 'ZH' ? MONTHS_ZH : MONTHS_EN;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={mpStyles.overlay} activeOpacity={1} onPress={onClose}>
         <View style={mpStyles.container}>
-          <Text style={mpStyles.title}>Select Month & Year</Text>
+          <Text style={mpStyles.title}>{lang === 'ZH' ? '选择月份与年份' : 'Select Month & Year'}</Text>
           <View style={mpStyles.columns}>
             <ScrollView style={mpStyles.col} showsVerticalScrollIndicator={false}>
               {MONTHS.map((m, i) => (
@@ -38,11 +49,11 @@ function MonthYearPicker({ visible, onClose, onSelect }) {
               ))}
             </ScrollView>
           </View>
-          <TouchableOpacity style={mpStyles.btn} onPress={() => { console.log('Show Results pressed:', selMonth, selYear); onSelect(selMonth, selYear); onClose(); }}>
-            <Text style={mpStyles.btnText}>Show Results</Text>
+          <TouchableOpacity style={mpStyles.btn} onPress={() => { onSelect(selMonth, selYear); onClose(); }}>
+            <Text style={mpStyles.btnText}>{lang === 'ZH' ? '显示成绩' : 'Show Results'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={mpStyles.clear} onPress={() => { onSelect(null, null); onClose(); }}>
-            <Text style={mpStyles.clearText}>Clear filter</Text>
+            <Text style={mpStyles.clearText}>{lang === 'ZH' ? '清除筛选' : 'Clear filter'}</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -65,28 +76,18 @@ const mpStyles = StyleSheet.create({
   clear: { alignItems: 'center', marginTop: 10 },
   clearText: { color: '#999', fontSize: 13 },
 });
-const GOLD = '#C9A84C';
-const PAGE_SIZE = 20;
 
-const BANNER_ID = __DEV__
-  ? TestIds.BANNER
-  : 'ca-app-pub-6984775309510247/2111888204';
-
-function DrawModal({ draw, prizes, visible, onClose }) {
+function DrawModal({ draw, prizes, visible, onClose, lang }) {
   if (!draw) return null;
-
   const dateStr = new Date(draw.draw_date).toLocaleDateString('en-SG', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
-
   const starters = prizes.filter(p => p.category === 'starter');
   const consolations = prizes.filter(p => p.category === 'consolation');
 
   const renderGrid = (numbers, color) => {
     const rows = [];
-    for (let i = 0; i < numbers.length; i += 4) {
-      rows.push(numbers.slice(i, i + 4));
-    }
+    for (let i = 0; i < numbers.length; i += 4) rows.push(numbers.slice(i, i + 4));
     return rows.map((row, ri) => (
       <View key={ri} style={styles.gridRow}>
         {row.map((n, ci) => (
@@ -102,24 +103,21 @@ function DrawModal({ draw, prizes, visible, onClose }) {
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          {/* Header */}
           <View style={styles.modalHeader}>
             <View>
-              <Text style={styles.modalTitle}>Draw #{draw.draw_no}</Text>
+              <Text style={styles.modalTitle}>{tr('drawNo', lang)} {draw.draw_no}</Text>
               <Text style={styles.modalDate}>{dateStr}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>
-
           <ScrollView style={styles.modalBody}>
-            {/* Top 3 */}
             <View style={styles.topPrizesRow}>
               {[
-                { label: '1st', value: draw.prize_1st, color: GOLD },
-                { label: '2nd', value: draw.prize_2nd, color: '#C0C0C0' },
-                { label: '3rd', value: draw.prize_3rd, color: '#CD7F32' },
+                { label: tr('prize1st', lang), value: draw.prize_1st, color: GOLD },
+                { label: tr('prize2nd', lang), value: draw.prize_2nd, color: '#C0C0C0' },
+                { label: tr('prize3rd', lang), value: draw.prize_3rd, color: '#CD7F32' },
               ].map(p => (
                 <View key={p.label} style={styles.prizeBox}>
                   <Text style={[styles.prizeLabel, { color: p.color }]}>{p.label}</Text>
@@ -127,19 +125,14 @@ function DrawModal({ draw, prizes, visible, onClose }) {
                 </View>
               ))}
             </View>
-
-            <Text style={styles.sectionTitle}>Starter Prizes</Text>
+            <Text style={styles.sectionTitle}>{tr('starter', lang)}</Text>
             {renderGrid(starters, '#185FA5')}
-
-            <Text style={[styles.sectionTitle, { marginTop: 12 }]}>Consolation Prizes</Text>
+            <Text style={[styles.sectionTitle, { marginTop: 12 }]}>{tr('consolation', lang)}</Text>
             {renderGrid(consolations, '#534AB7')}
-
             <View style={{ height: 16 }} />
           </ScrollView>
-
-          {/* Close Button */}
           <TouchableOpacity style={styles.closeBottomBtn} onPress={onClose}>
-            <Text style={styles.closeBottomText}>Close</Text>
+            <Text style={styles.closeBottomText}>{lang === 'ZH' ? '关闭' : 'Close'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -149,6 +142,8 @@ function DrawModal({ draw, prizes, visible, onClose }) {
 
 export default function FourdHistoryScreen() {
   const insets = useSafeAreaInsets();
+  const { lang } = useLang();
+  const MONTHS = lang === 'ZH' ? MONTHS_ZH : MONTHS_EN;
   const [draws, setDraws] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -161,75 +156,50 @@ export default function FourdHistoryScreen() {
   const [selectedPrizes, setSelectedPrizes] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const fetchDraws = useCallback(async (pageNum = 0, month = null, year = null, append = false) => {
-    if (pageNum === 0) setLoading(true);
-    else setLoadingMore(true);
-
+  const fetchDraws = useCallback(async (pageNum = 0, month = null, year = null) => {
+    if (pageNum === 0) setLoading(true); else setLoadingMore(true);
     const from = pageNum * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
-
-    let query = supabase
-      .from('fourd_draws')
-      .select('draw_no, draw_date, prize_1st, prize_2nd, prize_3rd')
-      .order('draw_date', { ascending: false })
-      .range(from, to);
-
+    let query = supabase.from('fourd_draws').select('draw_no, draw_date, prize_1st, prize_2nd, prize_3rd')
+      .order('draw_date', { ascending: false }).range(from, to);
     if (month !== null && year !== null) {
       const monthStr = String(month + 1).padStart(2, '0');
       const nextMonth = month === 11 ? 1 : month + 2;
       const nextYear = month === 11 ? year + 1 : year;
       const nextMonthStr = String(nextMonth).padStart(2, '0');
-      const dateFrom = `${year}-${monthStr}-01`;
-      const dateTo = `${nextYear}-${nextMonthStr}-01`;
-      console.log('Filtering by:', dateFrom, 'to', dateTo);
-      query = supabase
-        .from('fourd_draws')
-        .select('draw_no, draw_date, prize_1st, prize_2nd, prize_3rd')
-        .gte('draw_date', dateFrom)
-        .lt('draw_date', dateTo)
+      query = supabase.from('fourd_draws').select('draw_no, draw_date, prize_1st, prize_2nd, prize_3rd')
+        .gte('draw_date', `${year}-${monthStr}-01`).lt('draw_date', `${nextYear}-${nextMonthStr}-01`)
         .order('draw_date', { ascending: false });
     }
-
-    const { data, error } = await query;
-    console.log('Query result:', data?.length, 'error:', error);
+    const { data } = await query;
     if (data) {
-      if (pageNum === 0) setDraws(data);
-      else setDraws(prev => [...prev, ...data]);
+      setDraws(pageNum === 0 ? data : prev => [...prev, ...data]);
       setHasMore(data.length === PAGE_SIZE && month === null);
     }
-    setLoading(false);
-    setLoadingMore(false);
+    setLoading(false); setLoadingMore(false);
   }, []);
 
-  useEffect(() => {
-    console.log('Filter changed:', filterMonth, filterYear);
-    setPage(0);
-    fetchDraws(0, filterMonth, filterYear, false);
-  }, [filterMonth, filterYear]);
+  useEffect(() => { setPage(0); fetchDraws(0, filterMonth, filterYear); }, [filterMonth, filterYear]);
 
   const loadMore = () => {
     if (!loadingMore && hasMore && filterMonth === null) {
-      setLoadingMore(true);
-      const next = page + 1;
-      setPage(next);
-      fetchDraws(next, null, null, true);
+      const next = page + 1; setPage(next); fetchDraws(next, null, null);
     }
   };
 
   const openDraw = async (draw) => {
-    setSelectedDraw(draw);
-    setSelectedPrizes([]);
-    setModalVisible(true);
-    const { data } = await supabase
-      .from('fourd_prizes')
-      .select('*')
-      .eq('draw_no', draw.draw_no);
+    setSelectedDraw(draw); setSelectedPrizes([]); setModalVisible(true);
+    const { data } = await supabase.from('fourd_prizes').select('*').eq('draw_no', draw.draw_no);
     setSelectedPrizes(data || []);
   };
 
   const dateStr = (d) => new Date(d).toLocaleDateString('en-SG', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
   });
+
+  const filterLabel = filterMonth !== null && filterYear !== null
+    ? `${MONTHS[filterMonth]} ${filterYear}`
+    : (lang === 'ZH' ? '按月筛选' : 'Filter by month');
 
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.row} onPress={() => openDraw(item)}>
@@ -248,16 +218,12 @@ export default function FourdHistoryScreen() {
     </TouchableOpacity>
   );
 
-  if (loading) return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" color={DARK} />
-    </View>
-  );
+  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={DARK} /></View>;
 
   return (
     <View style={styles.wrapper}>
       <TouchableOpacity style={styles.filterBar} onPress={() => setPickerVisible(true)}>
-        <Text style={styles.filterLabel}>📅 {filterMonth !== null ? `${MONTHS[filterMonth]} ${filterYear}` : 'Filter by month'}</Text>
+        <Text style={styles.filterLabel}>📅 {filterLabel}</Text>
         {filterMonth !== null && (
           <TouchableOpacity onPress={() => { setFilterMonth(null); setFilterYear(null); }}>
             <Text style={styles.filterClear}>✕</Text>
@@ -272,27 +238,13 @@ export default function FourdHistoryScreen() {
         onEndReachedThreshold={0.3}
         ListFooterComponent={loadingMore ? <ActivityIndicator style={{ padding: 16 }} color={DARK} /> : null}
       />
-
       <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd
-          unitId={BANNER_ID}
-          size={BannerAdSize.BANNER}
-          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-        />
+        <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
       </View>
-
-      <MonthYearPicker
-        visible={pickerVisible}
-        onClose={() => setPickerVisible(false)}
-        onSelect={(m, y) => { console.log('onSelect called:', m, y); setFilterMonth(m); setFilterYear(y); }}
-      />
-
-      <DrawModal
-        draw={selectedDraw}
-        prizes={selectedPrizes}
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-      />
+      <MonthYearPicker visible={pickerVisible} onClose={() => setPickerVisible(false)}
+        onSelect={(m, y) => { setFilterMonth(m); setFilterYear(y); }} lang={lang} />
+      <DrawModal draw={selectedDraw} prizes={selectedPrizes} visible={modalVisible}
+        onClose={() => setModalVisible(false)} lang={lang} />
     </View>
   );
 }
@@ -314,8 +266,6 @@ const styles = StyleSheet.create({
   numTextFirst: { color: '#fff' },
   chevron: { color: '#ccc', fontSize: 20, marginLeft: 8 },
   bannerContainer: { alignItems: 'center', paddingTop: 6, borderTopWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
-
-  // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContainer: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 20, borderBottomWidth: 0.5, borderColor: '#eee' },

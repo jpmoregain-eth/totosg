@@ -6,9 +6,12 @@ import {
 import { supabase } from '../lib/supabase';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLang } from '../lib/LangContext';
+import { tr } from '../lib/i18n';
 
 const DARK = '#1a1a2e';
 const ORANGE = '#FF6B35';
+const GOLD = '#C9A84C';
 
 const BANNER_ID = __DEV__
   ? TestIds.BANNER
@@ -16,8 +19,10 @@ const BANNER_ID = __DEV__
 
 export default function ResultsScreen() {
   const insets = useSafeAreaInsets();
+  const { lang } = useLang();
   const [draw, setDraw] = useState(null);
   const [prizes, setPrizes] = useState([]);
+  const [jackpot, setJackpot] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -38,6 +43,15 @@ export default function ResultsScreen() {
         .order('prize_group');
       setPrizes(prizeData || []);
     }
+
+    // Fetch next jackpot info
+    const { data: jackpotData } = await supabase
+      .from('toto_jackpot')
+      .select('*')
+      .eq('id', 1)
+      .single();
+    if (jackpotData) setJackpot(jackpotData);
+
     setLoading(false);
     setRefreshing(false);
   };
@@ -56,6 +70,18 @@ export default function ResultsScreen() {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
   }) : '';
 
+  const groupLabel = (g) => {
+    const map = {
+      1: tr('group1', lang), 2: tr('group2', lang), 3: tr('group3', lang),
+      4: tr('group4', lang), 5: tr('group5', lang), 6: tr('group6', lang), 7: tr('group7', lang),
+    };
+    return map[g] || `Group ${g}`;
+  };
+
+  const formattedJackpot = jackpot?.jackpot_amount
+    ? '$' + Number(jackpot.jackpot_amount).toLocaleString()
+    : null;
+
   return (
     <View style={styles.wrapper}>
       <ScrollView
@@ -65,10 +91,10 @@ export default function ResultsScreen() {
         <View style={styles.header}>
           <View style={styles.badge}>
             <View style={styles.badgeDot} />
-            <Text style={styles.badgeText}>Draw #{draw?.draw_no} · {dateStr}</Text>
+            <Text style={styles.badgeText}>{tr('drawNo', lang)} {draw?.draw_no} · {dateStr}</Text>
           </View>
 
-          <Text style={styles.sectionLabel}>Winning numbers</Text>
+          <Text style={styles.sectionLabel}>{tr('results', lang)}</Text>
           <View style={styles.numbersRow}>
             {nums.map((n, i) => (
               <View key={i} style={styles.ball}>
@@ -85,18 +111,36 @@ export default function ResultsScreen() {
           <Text style={styles.jackpot}>
             ${draw?.group1_prize ? Number(draw.group1_prize).toLocaleString() : 'N/A'}
           </Text>
-          <Text style={styles.jackpotLabel}>Group 1 jackpot</Text>
+          <Text style={styles.jackpotLabel}>{tr('group1', lang)} {tr('prize', lang)}</Text>
         </View>
+
+        {/* Next Draw Jackpot Banner */}
+        {jackpot && formattedJackpot && (
+          <View style={styles.nextDrawBanner}>
+            <View style={styles.nextDrawLeft}>
+              <Text style={styles.nextDrawLabel}>
+                🎰 {lang === 'ZH' ? '下一期' : 'Next Draw'}
+              </Text>
+              <Text style={styles.nextDrawDate}>{jackpot.next_draw_date}</Text>
+            </View>
+            <View style={styles.nextDrawRight}>
+              <Text style={styles.nextDrawEstLabel}>
+                {lang === 'ZH' ? '估计奖金' : 'Est. Jackpot'}
+              </Text>
+              <Text style={styles.nextDrawAmount}>{formattedJackpot}</Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.tableContainer}>
           <View style={styles.tableHeader}>
-            <Text style={[styles.tableHead, { flex: 1.2 }]}>Group</Text>
-            <Text style={[styles.tableHead, { flex: 1, textAlign: 'center' }]}>Winners</Text>
-            <Text style={[styles.tableHead, { flex: 1.5, textAlign: 'right' }]}>Prize</Text>
+            <Text style={[styles.tableHead, { flex: 1.2 }]}>{tr('group1', lang).replace('1','')}</Text>
+            <Text style={[styles.tableHead, { flex: 1, textAlign: 'center' }]}>{tr('shares', lang)}</Text>
+            <Text style={[styles.tableHead, { flex: 1.5, textAlign: 'right' }]}>{tr('prize', lang)}</Text>
           </View>
           {prizes.map((p) => (
             <View key={p.prize_group} style={styles.tableRow}>
-              <Text style={[styles.tableCell, { flex: 1.2 }]}>Group {p.prize_group}</Text>
+              <Text style={[styles.tableCell, { flex: 1.2 }]}>{groupLabel(p.prize_group)}</Text>
               <Text style={[styles.tableCell, { flex: 1, textAlign: 'center' }]}>
                 {p.winning_shares > 0 ? p.winning_shares.toLocaleString() : '-'}
               </Text>
@@ -108,13 +152,8 @@ export default function ResultsScreen() {
         </View>
       </ScrollView>
 
-      {/* Sticky Banner */}
       <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd
-          unitId={BANNER_ID}
-          size={BannerAdSize.BANNER}
-          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-        />
+        <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
       </View>
     </View>
   );
@@ -136,6 +175,28 @@ const styles = StyleSheet.create({
   addRow: { alignItems: 'center', marginBottom: 20 },
   jackpot: { color: '#fff', fontSize: 28, fontWeight: '600' },
   jackpotLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 4 },
+
+  // Next draw jackpot banner
+  nextDrawBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: DARK,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: GOLD + '55',
+  },
+  nextDrawLeft: { flex: 1 },
+  nextDrawLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginBottom: 3 },
+  nextDrawDate: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  nextDrawRight: { alignItems: 'flex-end' },
+  nextDrawEstLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginBottom: 3 },
+  nextDrawAmount: { color: GOLD, fontSize: 20, fontWeight: '700' },
+
   tableContainer: { padding: 16 },
   tableHeader: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 0.5, borderColor: '#ddd', marginBottom: 4 },
   tableHead: { fontSize: 11, color: '#999', fontWeight: '500' },
