@@ -3,7 +3,7 @@ export type Lang = 'EN' | 'ZH';
 export const t = {
   // Header
   appTitle:    { EN: 'SG Lottery',              ZH: '新加坡彩票' },
-  appSubtitle: { EN: 'Singapore Pools Results', ZH: '新加坡博彩成绩' },
+  appSubtitle: { EN: 'Singapore Pools Results', ZH: '新加坡马票成绩' },
 
   // Tabs
   results:   { EN: 'Results',   ZH: '成绩' },
@@ -12,10 +12,10 @@ export const t = {
   whatIf:    { EN: 'What If?',  ZH: '如果？' },
 
   // 4D / TOTO prize labels
-  prize1st:     { EN: '1st Prize',    ZH: '一等奖' },
-  prize2nd:     { EN: '2nd Prize',    ZH: '二等奖' },
-  prize3rd:     { EN: '3rd Prize',    ZH: '三等奖' },
-  starter:      { EN: 'Starter',      ZH: '特别奖' },
+  prize1st:     { EN: '1st Prize',    ZH: '头奖' },
+  prize2nd:     { EN: '2nd Prize',    ZH: '二奖' },
+  prize3rd:     { EN: '3rd Prize',    ZH: '三奖' },
+  starter:      { EN: 'Starter',      ZH: '入围奖' },
   consolation:  { EN: 'Consolation',  ZH: '安慰奖' },
   additional:   { EN: 'Additional',   ZH: '附加号码' },
   drawNo:       { EN: 'Draw No.',     ZH: '期号' },
