@@ -11,10 +11,10 @@ import { useLang } from '../lib/LangContext';
 import { tr } from '../lib/i18n';
 
 const DARK = '#1a1a2e';
-const ORANGE = '#FF6B35';
 const RED = '#E24B4A';
 const BLUE = '#185FA5';
 const PURPLE = '#534AB7';
+const GOLD = '#C9A84C';
 
 const AD_UNIT_ID = __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-6984775309510247/5548935293';
 const BANNER_ID = __DEV__ ? TestIds.BANNER : 'ca-app-pub-6984775309510247/2111888204';
@@ -24,6 +24,8 @@ const interstitial = InterstitialAd.createForAdRequest(AD_UNIT_ID, { requestNonP
 const STRATEGIES = ['Frequency', 'Markov Chain', 'Mean Reversion', 'LSTM', 'Wheeling', 'Sum Range', 'Odd/Even Balance', 'Positional Bias'];
 const TEMPS = ['Hottest', 'Coldest', 'Balanced'];
 const WINDOWS = [25, 50, 100, 200];
+const COUNT_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
 const STRATEGY_ZH = {
   'Frequency': '频率', 'Markov Chain': '马尔可夫链', 'Mean Reversion': '均值回归',
   'LSTM': 'LSTM', 'Wheeling': '轮盘', 'Sum Range': '总和范围',
@@ -34,7 +36,7 @@ const TEMP_ZH = { 'Hottest': '最热', 'Coldest': '最冷', 'Balanced': '平衡'
 function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
 
-function pickNumbers(draws, temp, count = 6) {
+function pickNumbers(draws, temp, count) {
   const freq = {};
   for (let i = 1; i <= 49; i++) freq[i] = 0;
   draws.forEach(d => { [d.n1,d.n2,d.n3,d.n4,d.n5,d.n6,d.additional].forEach(n => { if (n) freq[n] = (freq[n]||0)+1; }); });
@@ -44,19 +46,9 @@ function pickNumbers(draws, temp, count = 6) {
   return sorted.slice(0,count).map(x=>parseInt(x[0])).sort((a,b)=>a-b);
 }
 
-function pickAdditional(draws, mainNums, temp) {
-  const freq = {};
-  for (let i=1;i<=49;i++) freq[i]=0;
-  draws.forEach(d=>{if(d.additional) freq[d.additional]++;});
-  const candidates = Object.entries(freq).filter(([n])=>!mainNums.includes(parseInt(n))).filter(([,c])=>c>0)
-    .sort((a,b)=>{const diff=temp==='Coldest'?a[1]-b[1]:b[1]-a[1];return diff!==0?diff:Math.random()-0.5;});
-  const pool=candidates.length>0?candidates:Object.entries(freq).filter(([n])=>!mainNums.includes(parseInt(n))).sort(()=>Math.random()-0.5);
-  if(temp==='Balanced') return parseInt(pool[Math.floor(pool.length/2)][0]);
-  return parseInt(pool[0][0]);
-}
-
-function positionalBias(draws) {
-  if(!draws||draws.length<10) return null;
+function positionalBias(draws, count) {
+  // Only meaningful for the standard 6-number draw structure
+  if (count !== 6 || !draws || draws.length < 10) return null;
   const positional=[[],[],[],[],[],[]];
   draws.forEach(d=>{[d.n1,d.n2,d.n3,d.n4,d.n5,d.n6].forEach((n,i)=>{const num=parseInt(n);if(num&&!isNaN(num)&&num>=1&&num<=49) positional[i].push(num);});});
   const picked=new Set(); const result=[];
@@ -69,14 +61,47 @@ function positionalBias(draws) {
   return result.sort((a,b)=>a-b);
 }
 
-function generateSet(draws, strategy, temp) {
-  let nums = pickNumbers(draws, temp, 6);
-  if(strategy==='Mean Reversion'){const recent=new Set();draws.slice(0,10).forEach(d=>[d.n1,d.n2,d.n3,d.n4,d.n5,d.n6].forEach(n=>recent.add(n)));const overdue=Array.from({length:49},(_,i)=>i+1).filter(n=>!recent.has(n));if(overdue.length>=6) nums=shuffle(overdue).slice(0,6).sort((a,b)=>a-b);}
-  else if(strategy==='Sum Range'){let attempts=0;while(attempts<50){const c=pickNumbers(draws,temp,6);if(c.reduce((a,b)=>a+b,0)>=100&&c.reduce((a,b)=>a+b,0)<=180){nums=c;break;}attempts++;}}
-  else if(strategy==='Odd/Even Balance'){let attempts=0;while(attempts<50){const c=shuffle(Array.from({length:49},(_,i)=>i+1)).slice(0,6).sort((a,b)=>a-b);if(c.filter(n=>n%2!==0).length===3){nums=c;break;}attempts++;}}
-  else if(strategy==='Wheeling'){const pool=pickNumbers(draws,temp,10);nums=shuffle(pool).slice(0,6).sort((a,b)=>a-b);}
-  else if(strategy==='Positional Bias'){const pb=positionalBias(draws);if(pb) nums=pb;}
-  return { nums, additional: pickAdditional(draws, nums, temp) };
+function generateSet(draws, strategy, temp, count) {
+  let nums = pickNumbers(draws, temp, count);
+
+  if (strategy === 'Mean Reversion') {
+    const recent = new Set();
+    draws.slice(0, 10).forEach(d => [d.n1,d.n2,d.n3,d.n4,d.n5,d.n6].forEach(n => recent.add(n)));
+    const overdue = Array.from({length:49},(_,i)=>i+1).filter(n => !recent.has(n));
+    if (overdue.length >= count) nums = shuffle(overdue).slice(0, count).sort((a,b)=>a-b);
+
+  } else if (strategy === 'Sum Range') {
+    // Scale target sum range proportionally to count (roughly 16–30 per number, based on 1-49 spread)
+    const lower = Math.round(count * 16.7);
+    const upper = Math.round(count * 30);
+    let attempts = 0;
+    while (attempts < 50) {
+      const c = pickNumbers(draws, temp, count);
+      const sum = c.reduce((a,b)=>a+b,0);
+      if (sum >= lower && sum <= upper) { nums = c; break; }
+      attempts++;
+    }
+
+  } else if (strategy === 'Odd/Even Balance') {
+    const targetOdd = Math.round(count / 2);
+    let attempts = 0;
+    while (attempts < 50) {
+      const c = shuffle(Array.from({length:49},(_,i)=>i+1)).slice(0, count).sort((a,b)=>a-b);
+      if (c.filter(n => n % 2 !== 0).length === targetOdd) { nums = c; break; }
+      attempts++;
+    }
+
+  } else if (strategy === 'Wheeling') {
+    const poolSize = Math.min(49, count + 6);
+    const pool = pickNumbers(draws, temp, poolSize);
+    nums = shuffle(pool).slice(0, count).sort((a,b)=>a-b);
+
+  } else if (strategy === 'Positional Bias') {
+    const pb = positionalBias(draws, count);
+    if (pb) nums = pb;
+  }
+
+  return { nums };
 }
 
 function getTempColor(temp) {
@@ -85,14 +110,42 @@ function getTempColor(temp) {
   return PURPLE;
 }
 
+function splitIntoRows(nums) {
+  if (nums.length <= 7) return [nums];
+  // Split into 2 rows as evenly as possible
+  const firstRowCount = Math.ceil(nums.length / 2);
+  return [nums.slice(0, firstRowCount), nums.slice(firstRowCount)];
+}
+
+function NumberCountSelector({ value, onChange, lang }) {
+  return (
+    <View style={styles.countSection}>
+      <Text style={styles.countLabel}>{lang === 'ZH' ? '生成号码数量' : 'Numbers to generate'}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.countRow}>
+        {COUNT_OPTIONS.map(n => (
+          <TouchableOpacity
+            key={n}
+            style={[styles.countPill, value === n && styles.countPillActive]}
+            onPress={() => onChange(n)}
+          >
+            <Text style={[styles.countPillText, value === n && styles.countPillTextActive]}>{n}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function GeneratorScreen() {
   const insets = useSafeAreaInsets();
   const { lang } = useLang();
   const [allDraws, setAllDraws] = useState({});
   const [sets, setSets] = useState([]);
+  const [numCount, setNumCount] = useState(6);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [adLoaded, setAdLoaded] = useState(false);
+  const doGenerateRef = React.useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,20 +158,22 @@ export default function GeneratorScreen() {
     };
     fetchData();
     const unsubLoaded = interstitial.addAdEventListener(AdEventType.LOADED, ()=>setAdLoaded(true));
-    const unsubClosed = interstitial.addAdEventListener(AdEventType.CLOSED, ()=>{setAdLoaded(false);interstitial.load();doGenerate();});
-    const unsubError = interstitial.addAdEventListener(AdEventType.ERROR, ()=>{setAdLoaded(false);doGenerate();});
+    const unsubClosed = interstitial.addAdEventListener(AdEventType.CLOSED, ()=>{setAdLoaded(false);interstitial.load();doGenerateRef.current();});
+    const unsubError = interstitial.addAdEventListener(AdEventType.ERROR, ()=>{setAdLoaded(false);doGenerateRef.current();});
     interstitial.load();
     return ()=>{unsubLoaded();unsubClosed();unsubError();};
   }, []);
 
-  const doGenerate = () => {
+  const doGenerate = React.useCallback(() => {
     const newSets = Array.from({length:3},()=>{
       const strategy=pickRandom(STRATEGIES); const temp=pickRandom(TEMPS); const window=pickRandom(WINDOWS);
-      const draws=allDraws[window]||[]; const {nums,additional}=generateSet(draws,strategy,temp);
-      return {strategy,temp,window,nums,additional};
+      const draws=allDraws[window]||[]; const {nums}=generateSet(draws,strategy,temp,numCount);
+      return {strategy,temp,window,nums};
     });
     setSets(newSets); setGenerating(false);
-  };
+  }, [allDraws, numCount]);
+
+  React.useEffect(() => { doGenerateRef.current = doGenerate; }, [doGenerate]);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -138,6 +193,12 @@ export default function GeneratorScreen() {
   return (
     <View style={styles.wrapper}>
       <ScrollView style={styles.container} contentContainerStyle={{padding:16}}>
+        <NumberCountSelector
+          value={numCount}
+          onChange={(n) => { setNumCount(n); setSets([]); }}
+          lang={lang}
+        />
+
         <Text style={styles.sectionLabel}>{lang==='ZH'?'建议号码':'Suggested sets'}</Text>
         {sets.length===0&&(
           <View style={styles.emptyState}>
@@ -150,11 +211,12 @@ export default function GeneratorScreen() {
               <Text style={{color:getTempColor(set.temp),fontWeight:'600'}}>{stratLabel(set.strategy)} · {tempLabel(set.temp)}</Text>
               <Text style={{color:'#999'}}> · {lang==='ZH'?`最近${set.window}期`:`last ${set.window} draws`}</Text>
             </Text>
-            <View style={styles.numsRow}>
-              {set.nums.map((n,i)=>(<View key={i} style={[styles.ball,{backgroundColor:getTempColor(set.temp)}]}><Text style={styles.ballText}>{n}</Text></View>))}
-            </View>
-            <View style={styles.addRow}>
-              <View style={[styles.ball,{backgroundColor:ORANGE}]}><Text style={styles.ballText}>{set.additional}</Text></View>
+            <View style={styles.numsContainer}>
+              {splitIntoRows(set.nums).map((row, ri) => (
+                <View key={ri} style={styles.numsRow}>
+                  {row.map((n,i)=>(<View key={i} style={[styles.ball,{backgroundColor:getTempColor(set.temp)}]}><Text style={styles.ballText}>{n}</Text></View>))}
+                </View>
+              ))}
             </View>
           </View>
         ))}
@@ -171,12 +233,21 @@ export default function GeneratorScreen() {
 
 const styles = StyleSheet.create({
   wrapper:{flex:1,backgroundColor:'#fff'}, container:{flex:1}, center:{flex:1,justifyContent:'center',alignItems:'center'},
+
+  countSection: { marginBottom: 18 },
+  countLabel: { fontSize: 13, fontWeight: '500', color: '#555', marginBottom: 8 },
+  countRow: { flexDirection: 'row', gap: 8, paddingRight: 8 },
+  countPill: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' },
+  countPillActive: { backgroundColor: GOLD },
+  countPillText: { fontSize: 14, fontWeight: '600', color: '#666' },
+  countPillTextActive: { color: '#fff' },
+
   sectionLabel:{fontSize:14,fontWeight:'500',color:'#111',marginBottom:12},
   emptyState:{alignItems:'center',paddingVertical:40}, emptyText:{color:'#999',fontSize:13},
   card:{backgroundColor:'#f7f7f7',borderRadius:12,padding:12,marginBottom:12}, cardLabel:{fontSize:11,marginBottom:10},
-  numsRow:{flexDirection:'row',justifyContent:'space-between',marginBottom:8},
-  ball:{width:40,height:40,borderRadius:20,justifyContent:'center',alignItems:'center'}, ballText:{color:'#fff',fontSize:13,fontWeight:'600'},
-  addRow:{alignItems:'center'},
+  numsContainer:{gap:8},
+  numsRow:{flexDirection:'row',justifyContent:'center',gap:8},
+  ball:{width:38,height:38,borderRadius:19,justifyContent:'center',alignItems:'center'}, ballText:{color:'#fff',fontSize:13,fontWeight:'600'},
   btn:{backgroundColor:DARK,borderRadius:10,padding:14,alignItems:'center',marginTop:4,marginBottom:16}, btnText:{color:'#fff',fontSize:14,fontWeight:'500'},
   bannerContainer:{alignItems:'center',paddingTop:6,borderTopWidth:0.5,borderColor:'#eee',backgroundColor:'#fff'},
 });
