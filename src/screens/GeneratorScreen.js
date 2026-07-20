@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator,
+  TouchableOpacity, ActivityIndicator, Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { InterstitialAd, AdEventType, TestIds, BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
+import { RewardedAd, RewardedAdEventType, AdEventType, TestIds, BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
 import { useLang } from '../lib/LangContext';
 import { tr } from '../lib/i18n';
 
@@ -16,10 +16,10 @@ const BLUE = '#185FA5';
 const PURPLE = '#534AB7';
 const GOLD = '#C9A84C';
 
-const AD_UNIT_ID = __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-6984775309510247/5548935293';
-const BANNER_ID = __DEV__ ? TestIds.BANNER : 'ca-app-pub-6984775309510247/2111888204';
+const REWARDED_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/6047752765';
+const BANNER_ID = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-6984775309510247/2111888204';
 
-const interstitial = InterstitialAd.createForAdRequest(AD_UNIT_ID, { requestNonPersonalizedAdsOnly: true });
+const rewarded = RewardedAd.createForAdRequest(REWARDED_ID, { requestNonPersonalizedAdsOnly: true });
 
 const STRATEGIES = ['Frequency', 'Markov Chain', 'Mean Reversion', 'LSTM', 'Wheeling', 'Sum Range', 'Odd/Even Balance', 'Positional Bias'];
 const TEMPS = ['Hottest', 'Coldest', 'Balanced'];
@@ -47,7 +47,6 @@ function pickNumbers(draws, temp, count) {
 }
 
 function positionalBias(draws, count) {
-  // Only meaningful for the standard 6-number draw structure
   if (count !== 6 || !draws || draws.length < 10) return null;
   const positional=[[],[],[],[],[],[]];
   draws.forEach(d=>{[d.n1,d.n2,d.n3,d.n4,d.n5,d.n6].forEach((n,i)=>{const num=parseInt(n);if(num&&!isNaN(num)&&num>=1&&num<=49) positional[i].push(num);});});
@@ -63,56 +62,33 @@ function positionalBias(draws, count) {
 
 function generateSet(draws, strategy, temp, count) {
   let nums = pickNumbers(draws, temp, count);
-
   if (strategy === 'Mean Reversion') {
     const recent = new Set();
     draws.slice(0, 10).forEach(d => [d.n1,d.n2,d.n3,d.n4,d.n5,d.n6].forEach(n => recent.add(n)));
     const overdue = Array.from({length:49},(_,i)=>i+1).filter(n => !recent.has(n));
     if (overdue.length >= count) nums = shuffle(overdue).slice(0, count).sort((a,b)=>a-b);
-
   } else if (strategy === 'Sum Range') {
-    // Scale target sum range proportionally to count (roughly 16–30 per number, based on 1-49 spread)
-    const lower = Math.round(count * 16.7);
-    const upper = Math.round(count * 30);
+    const lower = Math.round(count * 16.7); const upper = Math.round(count * 30);
     let attempts = 0;
-    while (attempts < 50) {
-      const c = pickNumbers(draws, temp, count);
-      const sum = c.reduce((a,b)=>a+b,0);
-      if (sum >= lower && sum <= upper) { nums = c; break; }
-      attempts++;
-    }
-
+    while (attempts < 50) { const c = pickNumbers(draws, temp, count); if (c.reduce((a,b)=>a+b,0) >= lower && c.reduce((a,b)=>a+b,0) <= upper) { nums = c; break; } attempts++; }
   } else if (strategy === 'Odd/Even Balance') {
-    const targetOdd = Math.round(count / 2);
-    let attempts = 0;
-    while (attempts < 50) {
-      const c = shuffle(Array.from({length:49},(_,i)=>i+1)).slice(0, count).sort((a,b)=>a-b);
-      if (c.filter(n => n % 2 !== 0).length === targetOdd) { nums = c; break; }
-      attempts++;
-    }
-
+    const targetOdd = Math.round(count / 2); let attempts = 0;
+    while (attempts < 50) { const c = shuffle(Array.from({length:49},(_,i)=>i+1)).slice(0, count).sort((a,b)=>a-b); if (c.filter(n => n % 2 !== 0).length === targetOdd) { nums = c; break; } attempts++; }
   } else if (strategy === 'Wheeling') {
-    const poolSize = Math.min(49, count + 6);
-    const pool = pickNumbers(draws, temp, poolSize);
+    const pool = pickNumbers(draws, temp, Math.min(49, count + 6));
     nums = shuffle(pool).slice(0, count).sort((a,b)=>a-b);
-
   } else if (strategy === 'Positional Bias') {
-    const pb = positionalBias(draws, count);
-    if (pb) nums = pb;
+    const pb = positionalBias(draws, count); if (pb) nums = pb;
   }
-
   return { nums };
 }
 
 function getTempColor(temp) {
-  if(temp==='Hottest') return RED;
-  if(temp==='Coldest') return BLUE;
-  return PURPLE;
+  if(temp==='Hottest') return RED; if(temp==='Coldest') return BLUE; return PURPLE;
 }
 
 function splitIntoRows(nums) {
   if (nums.length <= 7) return [nums];
-  // Split into 2 rows as evenly as possible
   const firstRowCount = Math.ceil(nums.length / 2);
   return [nums.slice(0, firstRowCount), nums.slice(firstRowCount)];
 }
@@ -123,16 +99,36 @@ function NumberCountSelector({ value, onChange, lang }) {
       <Text style={styles.countLabel}>{lang === 'ZH' ? '生成号码数量' : 'Numbers to generate'}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.countRow}>
         {COUNT_OPTIONS.map(n => (
-          <TouchableOpacity
-            key={n}
-            style={[styles.countPill, value === n && styles.countPillActive]}
-            onPress={() => onChange(n)}
-          >
+          <TouchableOpacity key={n} style={[styles.countPill, value === n && styles.countPillActive]} onPress={() => onChange(n)}>
             <Text style={[styles.countPillText, value === n && styles.countPillTextActive]}>{n}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
+  );
+}
+
+function SupportPrompt({ visible, onWatchAd, onSkip, lang }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={styles.promptOverlay}>
+        <View style={styles.promptBox}>
+          <Text style={styles.promptEmoji}>🙏</Text>
+          <Text style={styles.promptTitle}>{lang === 'ZH' ? '支持开发者！' : 'Support the Dev!'}</Text>
+          <Text style={styles.promptMsg}>
+            {lang === 'ZH'
+              ? '喜欢这个应用吗？观看一则短广告来支持开发者并生成您的幸运号码！'
+              : 'Enjoying the app? Watch a short ad to support the developer and generate your lucky numbers!'}
+          </Text>
+          <TouchableOpacity style={styles.promptWatchBtn} onPress={onWatchAd}>
+            <Text style={styles.promptWatchText}>{lang === 'ZH' ? '观看广告 🙏' : 'Watch Ad 🙏'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.promptSkipBtn} onPress={onSkip}>
+            <Text style={styles.promptSkipText}>{lang === 'ZH' ? '跳过' : 'Skip'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -145,6 +141,7 @@ export default function GeneratorScreen() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [adLoaded, setAdLoaded] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
   const doGenerateRef = React.useRef(null);
 
   useEffect(() => {
@@ -157,11 +154,16 @@ export default function GeneratorScreen() {
       setAllDraws(results); setLoading(false);
     };
     fetchData();
-    const unsubLoaded = interstitial.addAdEventListener(AdEventType.LOADED, ()=>setAdLoaded(true));
-    const unsubClosed = interstitial.addAdEventListener(AdEventType.CLOSED, ()=>{setAdLoaded(false);interstitial.load();doGenerateRef.current();});
-    const unsubError = interstitial.addAdEventListener(AdEventType.ERROR, ()=>{setAdLoaded(false);doGenerateRef.current();});
-    interstitial.load();
-    return ()=>{unsubLoaded();unsubClosed();unsubError();};
+    const unsubLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => setAdLoaded(true));
+    const unsubEarned = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {});
+    const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
+      setAdLoaded(false); rewarded.load(); doGenerateRef.current();
+    });
+    const unsubError = rewarded.addAdEventListener(AdEventType.ERROR, () => {
+      setAdLoaded(false); doGenerateRef.current();
+    });
+    rewarded.load();
+    return () => { unsubLoaded(); unsubEarned(); unsubClosed(); unsubError(); };
   }, []);
 
   const doGenerate = React.useCallback(() => {
@@ -170,19 +172,26 @@ export default function GeneratorScreen() {
       const draws=allDraws[window]||[]; const {nums}=generateSet(draws,strategy,temp,numCount);
       return {strategy,temp,window,nums};
     });
-    setSets(newSets); setGenerating(false);
+    setSets(newSets); setGenerating(false); setShowPrompt(false);
   }, [allDraws, numCount]);
 
   React.useEffect(() => { doGenerateRef.current = doGenerate; }, [doGenerate]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     setGenerating(true);
-    const today=new Date().toDateString();
-    const stored=await AsyncStorage.getItem('generate_count');
-    const parsed=stored?JSON.parse(stored):{date:today,count:0};
-    const count=parsed.date===today?parsed.count:0;
-    await AsyncStorage.setItem('generate_count',JSON.stringify({date:today,count:count+1}));
-    if(count<20&&adLoaded){interstitial.show();}else{setTimeout(()=>doGenerate(),300);}
+    setShowPrompt(true);
+  };
+
+  const handleWatchAd = () => {
+    if (adLoaded) {
+      rewarded.show();
+    } else {
+      doGenerate();
+    }
+  };
+
+  const handleSkip = () => {
+    doGenerate();
   };
 
   if(loading) return <View style={styles.center}><ActivityIndicator size="large" color={DARK}/></View>;
@@ -193,12 +202,7 @@ export default function GeneratorScreen() {
   return (
     <View style={styles.wrapper}>
       <ScrollView style={styles.container} contentContainerStyle={{padding:16}}>
-        <NumberCountSelector
-          value={numCount}
-          onChange={(n) => { setNumCount(n); setSets([]); }}
-          lang={lang}
-        />
-
+        <NumberCountSelector value={numCount} onChange={(n) => { setNumCount(n); setSets([]); }} lang={lang} />
         <Text style={styles.sectionLabel}>{lang==='ZH'?'建议号码':'Suggested sets'}</Text>
         {sets.length===0&&(
           <View style={styles.emptyState}>
@@ -221,19 +225,21 @@ export default function GeneratorScreen() {
           </View>
         ))}
         <TouchableOpacity style={styles.btn} onPress={handleGenerate} disabled={generating}>
-          {generating?<ActivityIndicator color="#fff"/>:<Text style={styles.btnText}>{tr('generate',lang)}</Text>}
+          {generating && !showPrompt ? <ActivityIndicator color="#fff"/> : <Text style={styles.btnText}>{tr('generate',lang)}</Text>}
         </TouchableOpacity>
       </ScrollView>
+
       <View style={[styles.bannerContainer,{paddingBottom:insets.bottom}]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} requestOptions={{requestNonPersonalizedAdsOnly:true}}/>
+        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{requestNonPersonalizedAdsOnly:true}}/>
       </View>
+
+      <SupportPrompt visible={showPrompt} onWatchAd={handleWatchAd} onSkip={handleSkip} lang={lang} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper:{flex:1,backgroundColor:'#fff'}, container:{flex:1}, center:{flex:1,justifyContent:'center',alignItems:'center'},
-
   countSection: { marginBottom: 18 },
   countLabel: { fontSize: 13, fontWeight: '500', color: '#555', marginBottom: 8 },
   countRow: { flexDirection: 'row', gap: 8, paddingRight: 8 },
@@ -241,7 +247,6 @@ const styles = StyleSheet.create({
   countPillActive: { backgroundColor: GOLD },
   countPillText: { fontSize: 14, fontWeight: '600', color: '#666' },
   countPillTextActive: { color: '#fff' },
-
   sectionLabel:{fontSize:14,fontWeight:'500',color:'#111',marginBottom:12},
   emptyState:{alignItems:'center',paddingVertical:40}, emptyText:{color:'#999',fontSize:13},
   card:{backgroundColor:'#f7f7f7',borderRadius:12,padding:12,marginBottom:12}, cardLabel:{fontSize:11,marginBottom:10},
@@ -250,4 +255,14 @@ const styles = StyleSheet.create({
   ball:{width:38,height:38,borderRadius:19,justifyContent:'center',alignItems:'center'}, ballText:{color:'#fff',fontSize:13,fontWeight:'600'},
   btn:{backgroundColor:DARK,borderRadius:10,padding:14,alignItems:'center',marginTop:4,marginBottom:16}, btnText:{color:'#fff',fontSize:14,fontWeight:'500'},
   bannerContainer:{alignItems:'center',paddingTop:6,borderTopWidth:0.5,borderColor:'#eee',backgroundColor:'#fff'},
+  // Support prompt
+  promptOverlay:{flex:1,backgroundColor:'rgba(0,0,0,0.5)',justifyContent:'center',alignItems:'center',padding:32},
+  promptBox:{backgroundColor:'#fff',borderRadius:20,padding:24,alignItems:'center',width:'100%'},
+  promptEmoji:{fontSize:40,marginBottom:12},
+  promptTitle:{fontSize:18,fontWeight:'700',color:DARK,marginBottom:8},
+  promptMsg:{fontSize:14,color:'#555',textAlign:'center',lineHeight:22,marginBottom:24},
+  promptWatchBtn:{backgroundColor:PURPLE,borderRadius:12,paddingVertical:14,paddingHorizontal:32,width:'100%',alignItems:'center',marginBottom:10},
+  promptWatchText:{color:'#fff',fontSize:15,fontWeight:'700'},
+  promptSkipBtn:{paddingVertical:10},
+  promptSkipText:{color:'#999',fontSize:13},
 });

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator,
+  TouchableOpacity, ActivityIndicator, Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
-import { InterstitialAd, AdEventType, TestIds, BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
+import { RewardedAd, RewardedAdEventType, AdEventType, TestIds, BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLang } from '../lib/LangContext';
 import { tr } from '../lib/i18n';
@@ -15,10 +15,10 @@ const RED = '#E24B4A';
 const BLUE = '#185FA5';
 const PURPLE = '#534AB7';
 
-const INTERSTITIAL_ID = __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-6984775309510247/5548935293';
-const BANNER_ID = __DEV__ ? TestIds.BANNER : 'ca-app-pub-6984775309510247/2111888204';
+const REWARDED_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/6047752765';
+const BANNER_ID = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-6984775309510247/2111888204';
 
-const interstitial = InterstitialAd.createForAdRequest(INTERSTITIAL_ID, { requestNonPersonalizedAdsOnly: true });
+const rewarded = RewardedAd.createForAdRequest(REWARDED_ID, { requestNonPersonalizedAdsOnly: true });
 
 const STRATEGIES = ['Frequency', 'Mean Reversion', 'Positional Bias', 'Sum Range', 'Odd/Even', 'Cold Numbers'];
 const TEMPS = ['Hottest', 'Coldest', 'Balanced'];
@@ -30,22 +30,11 @@ function pad(n) { return String(Math.abs(Math.round(n))).padStart(4, '0').slice(
 
 function generate4D(draws, strategy, temp) {
   const freq = {};
-  draws.forEach(d => {
-    [d.prize_1st, d.prize_2nd, d.prize_3rd].forEach(n => {
-      if (n) freq[parseInt(n)] = (freq[parseInt(n)] || 0) + 1;
-    });
-  });
-  const sorted = Object.entries(freq).sort((a, b) => {
-    const diff = temp === 'Coldest' ? a[1] - b[1] : b[1] - a[1];
-    return diff !== 0 ? diff : Math.random() - 0.5;
-  });
+  draws.forEach(d => { [d.prize_1st, d.prize_2nd, d.prize_3rd].forEach(n => { if (n) freq[parseInt(n)] = (freq[parseInt(n)] || 0) + 1; }); });
+  const sorted = Object.entries(freq).sort((a, b) => { const diff = temp === 'Coldest' ? a[1] - b[1] : b[1] - a[1]; return diff !== 0 ? diff : Math.random() - 0.5; });
   if (strategy === 'Positional Bias') {
     const positions = [[], [], [], []];
-    draws.forEach(d => {
-      [d.prize_1st, d.prize_2nd, d.prize_3rd].forEach(n => {
-        if (n) { const s = String(n).padStart(4, '0'); s.split('').forEach((digit, i) => positions[i].push(parseInt(digit))); }
-      });
-    });
+    draws.forEach(d => { [d.prize_1st, d.prize_2nd, d.prize_3rd].forEach(n => { if (n) { const s = String(n).padStart(4, '0'); s.split('').forEach((digit, i) => positions[i].push(parseInt(digit))); } }); });
     const results = [];
     for (let k = 0; k < 3; k++) {
       const digits = positions.map(pos => {
@@ -66,8 +55,7 @@ function generate4D(draws, strategy, temp) {
     return shuffle(overdue).slice(0, 3).map(n => pad(n));
   }
   if (strategy === 'Sum Range') {
-    const pool = sorted.slice(0, 200);
-    let attempts = 0;
+    const pool = sorted.slice(0, 200); let attempts = 0;
     while (attempts < 200) {
       const candidates = shuffle(pool).slice(0, 3).map(x => parseInt(x[0]));
       if (candidates.reduce((a, b) => a + b, 0) >= 3000 && candidates.reduce((a, b) => a + b, 0) <= 7000) return candidates.map(n => pad(n));
@@ -89,9 +77,7 @@ function generate4D(draws, strategy, temp) {
 }
 
 function getTempColor(temp) {
-  if (temp === 'Hottest') return RED;
-  if (temp === 'Coldest') return BLUE;
-  return PURPLE;
+  if (temp === 'Hottest') return RED; if (temp === 'Coldest') return BLUE; return PURPLE;
 }
 
 const STRATEGY_ZH = {
@@ -99,6 +85,30 @@ const STRATEGY_ZH = {
   'Sum Range': '总和范围', 'Odd/Even': '奇偶', 'Cold Numbers': '冷号码',
 };
 const TEMP_ZH = { 'Hottest': '最热', 'Coldest': '最冷', 'Balanced': '平衡' };
+
+function SupportPrompt({ visible, onWatchAd, onSkip, lang }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={styles.promptOverlay}>
+        <View style={styles.promptBox}>
+          <Text style={styles.promptEmoji}>🙏</Text>
+          <Text style={styles.promptTitle}>{lang === 'ZH' ? '支持开发者！' : 'Support the Dev!'}</Text>
+          <Text style={styles.promptMsg}>
+            {lang === 'ZH'
+              ? '喜欢这个应用吗？观看一则短广告来支持开发者并生成您的幸运号码！'
+              : 'Enjoying the app? Watch a short ad to support the developer and generate your lucky numbers!'}
+          </Text>
+          <TouchableOpacity style={styles.promptWatchBtn} onPress={onWatchAd}>
+            <Text style={styles.promptWatchText}>{lang === 'ZH' ? '观看广告 🙏' : 'Watch Ad 🙏'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.promptSkipBtn} onPress={onSkip}>
+            <Text style={styles.promptSkipText}>{lang === 'ZH' ? '跳过' : 'Skip'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 export default function FourdGeneratorScreen() {
   const insets = useSafeAreaInsets();
@@ -108,24 +118,29 @@ export default function FourdGeneratorScreen() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [adLoaded, setAdLoaded] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
   const doGenerateRef = React.useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
       const results = {};
       for (const w of WINDOWS) {
-        const { data } = await supabase.from('fourd_draws').select('prize_1st,prize_2nd,prize_3rd')
-          .order('draw_date', { ascending: false }).limit(w);
+        const { data } = await supabase.from('fourd_draws').select('prize_1st,prize_2nd,prize_3rd').order('draw_date', { ascending: false }).limit(w);
         if (data) results[w] = data;
       }
       setAllDraws(results); setLoading(false);
     };
     fetchData();
-    const unsubLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => setAdLoaded(true));
-    const unsubClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => { setAdLoaded(false); interstitial.load(); doGenerateRef.current(); });
-    const unsubError = interstitial.addAdEventListener(AdEventType.ERROR, () => { setAdLoaded(false); doGenerateRef.current(); });
-    interstitial.load();
-    return () => { unsubLoaded(); unsubClosed(); unsubError(); };
+    const unsubLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => setAdLoaded(true));
+    const unsubEarned = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {});
+    const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
+      setAdLoaded(false); rewarded.load(); doGenerateRef.current();
+    });
+    const unsubError = rewarded.addAdEventListener(AdEventType.ERROR, () => {
+      setAdLoaded(false); doGenerateRef.current();
+    });
+    rewarded.load();
+    return () => { unsubLoaded(); unsubEarned(); unsubClosed(); unsubError(); };
   }, []);
 
   const doGenerate = React.useCallback(() => {
@@ -137,20 +152,21 @@ export default function FourdGeneratorScreen() {
       const numbers = generate4D(draws, strategy, temp);
       return { strategy, temp, window, numbers };
     });
-    setSets(newSets); setGenerating(false);
+    setSets(newSets); setGenerating(false); setShowPrompt(false);
   }, [allDraws]);
 
   React.useEffect(() => { doGenerateRef.current = doGenerate; }, [doGenerate]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     setGenerating(true);
-    const today = new Date().toDateString();
-    const stored = await AsyncStorage.getItem('fourd_generate_count');
-    const parsed = stored ? JSON.parse(stored) : { date: today, count: 0 };
-    const count = parsed.date === today ? parsed.count : 0;
-    await AsyncStorage.setItem('fourd_generate_count', JSON.stringify({ date: today, count: count + 1 }));
-    if (count < 20 && adLoaded) { interstitial.show(); } else { setTimeout(() => doGenerate(), 300); }
+    setShowPrompt(true);
   };
+
+  const handleWatchAd = () => {
+    if (adLoaded) { rewarded.show(); } else { doGenerate(); }
+  };
+
+  const handleSkip = () => { doGenerate(); };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={DARK} /></View>;
 
@@ -182,12 +198,15 @@ export default function FourdGeneratorScreen() {
           </View>
         ))}
         <TouchableOpacity style={styles.btn} onPress={handleGenerate} disabled={generating}>
-          {generating ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{tr('generate', lang)}</Text>}
+          {generating && !showPrompt ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{tr('generate', lang)}</Text>}
         </TouchableOpacity>
       </ScrollView>
+
       <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
+        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
       </View>
+
+      <SupportPrompt visible={showPrompt} onWatchAd={handleWatchAd} onSkip={handleSkip} lang={lang} />
     </View>
   );
 }
@@ -207,4 +226,14 @@ const styles = StyleSheet.create({
   btn: { backgroundColor: DARK, borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 4, marginBottom: 16 },
   btnText: { color: '#fff', fontSize: 14, fontWeight: '500' },
   bannerContainer: { alignItems: 'center', paddingTop: 6, borderTopWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
+  // Support prompt
+  promptOverlay:{flex:1,backgroundColor:'rgba(0,0,0,0.5)',justifyContent:'center',alignItems:'center',padding:32},
+  promptBox:{backgroundColor:'#fff',borderRadius:20,padding:24,alignItems:'center',width:'100%'},
+  promptEmoji:{fontSize:40,marginBottom:12},
+  promptTitle:{fontSize:18,fontWeight:'700',color:DARK,marginBottom:8},
+  promptMsg:{fontSize:14,color:'#555',textAlign:'center',lineHeight:22,marginBottom:24},
+  promptWatchBtn:{backgroundColor:PURPLE,borderRadius:12,paddingVertical:14,paddingHorizontal:32,width:'100%',alignItems:'center',marginBottom:10},
+  promptWatchText:{color:'#fff',fontSize:15,fontWeight:'700'},
+  promptSkipBtn:{paddingVertical:10},
+  promptSkipText:{color:'#999',fontSize:13},
 });

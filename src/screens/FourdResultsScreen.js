@@ -13,7 +13,7 @@ const DARK = '#1a1a2e';
 const GOLD = '#C9A84C';
 
 const BANNER_ID = __DEV__
-  ? TestIds.BANNER
+  ? TestIds.ADAPTIVE_BANNER
   : 'ca-app-pub-6984775309510247/2111888204';
 
 export default function FourdResultsScreen() {
@@ -116,7 +116,7 @@ export default function FourdResultsScreen() {
       </ScrollView>
 
       <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
+        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
       </View>
     </View>
   );

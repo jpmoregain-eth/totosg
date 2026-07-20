@@ -20,7 +20,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR - START_YEAR + 1 }, (_, i) => CURRENT_YEAR - i);
 
 const BANNER_ID = __DEV__
-  ? TestIds.BANNER
+  ? TestIds.ADAPTIVE_BANNER
   : 'ca-app-pub-6984775309510247/2111888204';
 
 function MonthYearPicker({ visible, onClose, onSelect, lang }) {
@@ -239,7 +239,7 @@ export default function FourdHistoryScreen() {
         ListFooterComponent={loadingMore ? <ActivityIndicator style={{ padding: 16 }} color={DARK} /> : null}
       />
       <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
+        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
       </View>
       <MonthYearPicker visible={pickerVisible} onClose={() => setPickerVisible(false)}
         onSelect={(m, y) => { setFilterMonth(m); setFilterYear(y); }} lang={lang} />

@@ -14,7 +14,7 @@ const ORANGE = '#FF6B35';
 const PAGE_SIZE = 20;
 
 const BANNER_ID = __DEV__
-  ? TestIds.BANNER
+  ? TestIds.ADAPTIVE_BANNER
   : 'ca-app-pub-6984775309510247/2111888204';
 
 const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -152,7 +152,7 @@ export default function HistoryScreen() {
         />
       )}
       <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
+        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
       </View>
       <MonthYearPicker visible={pickerVisible} onClose={() => setPickerVisible(false)}
         onSelect={(m, y) => { setFilterMonth(m); setFilterYear(y); }} lang={lang} />
