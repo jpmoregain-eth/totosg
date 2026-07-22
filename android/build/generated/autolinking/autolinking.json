@@ -159,6 +159,56 @@
           "isPureCxxDependency": false
         }
       }
+    },
+    "react-native-share": {
+      "root": "/home/ubuntu/TotoSG/node_modules/react-native-share",
+      "name": "react-native-share",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/home/ubuntu/TotoSG/node_modules/react-native-share/RNShare.podspec",
+          "version": "12.3.1",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/home/ubuntu/TotoSG/node_modules/react-native-share/android",
+          "packageImportPath": "import cl.json.RNSharePackage;",
+          "packageInstance": "new RNSharePackage()",
+          "buildTypes": [],
+          "libraryName": "RNShareSpec",
+          "componentDescriptors": [],
+          "cmakeListsPath": "/home/ubuntu/TotoSG/node_modules/react-native-share/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
+    "react-native-view-shot": {
+      "root": "/home/ubuntu/TotoSG/node_modules/react-native-view-shot",
+      "name": "react-native-view-shot",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/home/ubuntu/TotoSG/node_modules/react-native-view-shot/react-native-view-shot.podspec",
+          "version": "5.1.1",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/home/ubuntu/TotoSG/node_modules/react-native-view-shot/android",
+          "packageImportPath": "import fr.greweb.reactnativeviewshot.RNViewShotPackage;",
+          "packageInstance": "new RNViewShotPackage()",
+          "buildTypes": [],
+          "libraryName": "rnviewshot",
+          "componentDescriptors": [],
+          "cmakeListsPath": "/home/ubuntu/TotoSG/node_modules/react-native-view-shot/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
     }
   },
   "commands": [

@@ -5,6 +5,8 @@
     "/home/ubuntu/TotoSG/node_modules/react-native-pager-view/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/home/ubuntu/TotoSG/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
     "/home/ubuntu/TotoSG/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-share/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-view-shot/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/home/ubuntu/TotoSG/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup/CMakeLists.txt"
   ],
   "cleanCommandsComponents": [
@@ -40,6 +42,11 @@
       "abi": "arm64-v8a",
       "artifactName": "react_codegen_RNGoogleMobileAdsSpec"
     },
+    "react_codegen_RNShareSpec::@e6c4c2b5aedb2ea213b7": {
+      "toolchain": "toolchain",
+      "abi": "arm64-v8a",
+      "artifactName": "react_codegen_RNShareSpec"
+    },
     "react_codegen_pagerview::@7032a8921530ec438d60": {
       "toolchain": "toolchain",
       "abi": "arm64-v8a",
@@ -60,6 +67,11 @@
         "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/jsi/libs/android.arm64-v8a/libjsi.so",
         "/home/ubuntu/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.arm64-v8a/libfbjni.so"
       ]
+    },
+    "react_codegen_rnviewshot::@0ba03d237e60b9258a87": {
+      "toolchain": "toolchain",
+      "abi": "arm64-v8a",
+      "artifactName": "react_codegen_rnviewshot"
     },
     "react_codegen_safeareacontext::@7984cd80db47aa7b952a": {
       "toolchain": "toolchain",

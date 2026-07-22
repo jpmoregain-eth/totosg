@@ -5,6 +5,8 @@
     "/home/ubuntu/TotoSG/node_modules/react-native-pager-view/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/home/ubuntu/TotoSG/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
     "/home/ubuntu/TotoSG/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-share/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/ubuntu/TotoSG/node_modules/react-native-view-shot/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/home/ubuntu/TotoSG/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup/CMakeLists.txt"
   ],
   "cleanCommandsComponents": [
@@ -22,6 +24,11 @@
     "{LIST_OF_TARGETS_TO_BUILD}"
   ],
   "libraries": {
+    "react_codegen_rnviewshot::@0ba03d237e60b9258a87": {
+      "artifactName": "react_codegen_rnviewshot",
+      "abi": "x86_64",
+      "runtimeFiles": []
+    },
     "react_codegen_safeareacontext::@7984cd80db47aa7b952a": {
       "artifactName": "react_codegen_safeareacontext",
       "abi": "x86_64",
@@ -61,6 +68,11 @@
     },
     "react_codegen_RNGoogleMobileAdsSpec::@c00c605517d10bc7886c": {
       "artifactName": "react_codegen_RNGoogleMobileAdsSpec",
+      "abi": "x86_64",
+      "runtimeFiles": []
+    },
+    "react_codegen_RNShareSpec::@e6c4c2b5aedb2ea213b7": {
+      "artifactName": "react_codegen_RNShareSpec",
       "abi": "x86_64",
       "runtimeFiles": []
     },
