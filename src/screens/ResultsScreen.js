@@ -4,8 +4,7 @@ import {
   ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useLang } from '../lib/LangContext';
 import { tr } from '../lib/i18n';
 
@@ -13,12 +12,8 @@ const DARK = '#1a1a2e';
 const ORANGE = '#FF6B35';
 const GOLD = '#C9A84C';
 
-const BANNER_ID = __DEV__
-  ? TestIds.ADAPTIVE_BANNER
-  : 'ca-app-pub-6984775309510247/2111888204';
 
 export default function ResultsScreen() {
-  const insets = useSafeAreaInsets();
   const { lang } = useLang();
   const [draw, setDraw] = useState(null);
   const [prizes, setPrizes] = useState([]);
@@ -152,9 +147,6 @@ export default function ResultsScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
-      </View>
     </View>
   );
 }
@@ -202,5 +194,4 @@ const styles = StyleSheet.create({
   tableHead: { fontSize: 11, color: '#999', fontWeight: '500' },
   tableRow: { flexDirection: 'row', paddingVertical: 9, borderBottomWidth: 0.5, borderColor: '#f0f0f0' },
   tableCell: { fontSize: 13, color: '#222' },
-  bannerContainer: { alignItems: 'center', paddingTop: 6, borderTopWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
 });

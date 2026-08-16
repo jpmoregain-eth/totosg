@@ -4,20 +4,15 @@ import {
   ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useLang } from '../lib/LangContext';
 import { tr } from '../lib/i18n';
 
 const DARK = '#1a1a2e';
 const GOLD = '#C9A84C';
 
-const BANNER_ID = __DEV__
-  ? TestIds.ADAPTIVE_BANNER
-  : 'ca-app-pub-6984775309510247/2111888204';
 
 export default function FourdResultsScreen() {
-  const insets = useSafeAreaInsets();
   const { lang } = useLang();
   const [draw, setDraw] = useState(null);
   const [prizes, setPrizes] = useState({ starters: [], consolations: [] });
@@ -115,9 +110,6 @@ export default function FourdResultsScreen() {
         <View style={{ height: 16 }} />
       </ScrollView>
 
-      <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
-      </View>
     </View>
   );
 }
@@ -139,5 +131,4 @@ const styles = StyleSheet.create({
   gridRow: { flexDirection: 'row', marginBottom: 8 },
   gridCell: { flex: 1, alignItems: 'center', paddingVertical: 6, marginHorizontal: 3, backgroundColor: '#f7f7f7', borderRadius: 6 },
   gridNumber: { fontSize: 15, fontWeight: '600', color: '#222', letterSpacing: 1 },
-  bannerContainer: { alignItems: 'center', paddingTop: 6, borderTopWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
 });

@@ -5,8 +5,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useLang } from '../lib/LangContext';
 
 const DARK = '#1a1a2e';
@@ -14,9 +13,6 @@ const PURPLE = '#7c6ff7';
 const GOLD = '#C9A84C';
 const ORANGE = '#FF6B35';
 
-const BANNER_ID = __DEV__
-  ? TestIds.ADAPTIVE_BANNER
-  : 'ca-app-pub-6984775309510247/2111888204';
 
 const PRIZES_BIG   = { '1st': 2000, '2nd': 1000, '3rd': 490, 'Starter': 250, 'Consolation': 60 };
 const PRIZES_SMALL = { '1st': 3000, '2nd': 2000, '3rd': 800, 'Starter': 0,   'Consolation': 0  };
@@ -270,9 +266,6 @@ function FourdWhatIf({ insets }) {
         )}
         <View style={{ height: 20 }} />
       </ScrollView>
-      <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
-      </View>
     </View>
   );
 }
@@ -461,9 +454,6 @@ function TotoWhatIf({ insets }) {
       </ScrollView>
 
       <NumberPickerModal visible={pickerOpen} selected={selected} onPick={addNumber} onClose={() => setPickerOpen(false)} lang={lang} />
-      <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
-      </View>
     </View>
   );
 }
@@ -471,7 +461,7 @@ function TotoWhatIf({ insets }) {
 // ── Root Export ───────────────────────────────────────────────────────────────
 
 export default function WhatIfScreen({ game }) {
-  const insets = useSafeAreaInsets();
+  const insets = { bottom: 0 };
   if (game === '4D') return <FourdWhatIf insets={insets} />;
   return <TotoWhatIf insets={insets} />;
 }
@@ -550,5 +540,4 @@ const styles = StyleSheet.create({
   miniballText:   { fontSize: 11, fontWeight: '700', color: '#444' },
   saveBtn:     { backgroundColor: '#fff', borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginBottom: 8, borderWidth: 1, borderColor: '#ddd', elevation: 1 },
   saveBtnText: { color: '#555', fontSize: 14, fontWeight: '500' },
-  bannerContainer: { alignItems: 'center', paddingTop: 6, borderTopWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
 });

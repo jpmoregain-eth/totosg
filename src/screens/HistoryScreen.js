@@ -3,9 +3,8 @@ import {
   View, Text, StyleSheet, FlatList,
   ActivityIndicator, TouchableOpacity, Modal, ScrollView,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+
 import { useLang } from '../lib/LangContext';
 import { tr } from '../lib/i18n';
 
@@ -13,9 +12,6 @@ const DARK = '#1a1a2e';
 const ORANGE = '#FF6B35';
 const PAGE_SIZE = 20;
 
-const BANNER_ID = __DEV__
-  ? TestIds.ADAPTIVE_BANNER
-  : 'ca-app-pub-6984775309510247/2111888204';
 
 const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_ZH = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
@@ -62,7 +58,6 @@ function MonthYearPicker({ visible, onClose, onSelect, lang }) {
 }
 
 export default function HistoryScreen() {
-  const insets = useSafeAreaInsets();
   const { lang } = useLang();
   const MONTHS = lang === 'ZH' ? MONTHS_ZH : MONTHS_EN;
   const [draws, setDraws] = useState([]);
@@ -151,9 +146,6 @@ export default function HistoryScreen() {
           contentContainerStyle={{ paddingBottom: 8 }}
         />
       )}
-      <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
-      </View>
       <MonthYearPicker visible={pickerVisible} onClose={() => setPickerVisible(false)}
         onSelect={(m, y) => { setFilterMonth(m); setFilterYear(y); }} lang={lang} />
     </View>
@@ -175,7 +167,6 @@ const styles = StyleSheet.create({
   miniBallAdd: { backgroundColor: ORANGE },
   miniBallText: { color: '#fff', fontSize: 9, fontWeight: '600' },
   empty: { textAlign: 'center', color: '#999', marginTop: 40, fontSize: 14 },
-  bannerContainer: { alignItems: 'center', paddingTop: 6, borderTopWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   pickerContainer: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '80%', maxHeight: '70%' },
   pickerTitle: { fontSize: 16, fontWeight: '600', color: DARK, textAlign: 'center', marginBottom: 16 },

@@ -4,8 +4,7 @@ import {
   ActivityIndicator, Modal, ScrollView,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useLang } from '../lib/LangContext';
 import { tr } from '../lib/i18n';
 
@@ -19,9 +18,6 @@ const START_YEAR = 1986;
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR - START_YEAR + 1 }, (_, i) => CURRENT_YEAR - i);
 
-const BANNER_ID = __DEV__
-  ? TestIds.ADAPTIVE_BANNER
-  : 'ca-app-pub-6984775309510247/2111888204';
 
 function MonthYearPicker({ visible, onClose, onSelect, lang }) {
   const [selMonth, setSelMonth] = React.useState(new Date().getMonth());
@@ -141,7 +137,6 @@ function DrawModal({ draw, prizes, visible, onClose, lang }) {
 }
 
 export default function FourdHistoryScreen() {
-  const insets = useSafeAreaInsets();
   const { lang } = useLang();
   const MONTHS = lang === 'ZH' ? MONTHS_ZH : MONTHS_EN;
   const [draws, setDraws] = useState([]);
@@ -238,9 +233,6 @@ export default function FourdHistoryScreen() {
         onEndReachedThreshold={0.3}
         ListFooterComponent={loadingMore ? <ActivityIndicator style={{ padding: 16 }} color={DARK} /> : null}
       />
-      <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} />
-      </View>
       <MonthYearPicker visible={pickerVisible} onClose={() => setPickerVisible(false)}
         onSelect={(m, y) => { setFilterMonth(m); setFilterYear(y); }} lang={lang} />
       <DrawModal draw={selectedDraw} prizes={selectedPrizes} visible={modalVisible}
@@ -265,7 +257,6 @@ const styles = StyleSheet.create({
   numText: { fontSize: 13, fontWeight: '600', color: '#333', letterSpacing: 1 },
   numTextFirst: { color: '#fff' },
   chevron: { color: '#ccc', fontSize: 20, marginLeft: 8 },
-  bannerContainer: { alignItems: 'center', paddingTop: 6, borderTopWidth: 0.5, borderColor: '#eee', backgroundColor: '#fff' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContainer: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 20, borderBottomWidth: 0.5, borderColor: '#eee' },

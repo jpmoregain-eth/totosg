@@ -16,3 +16,9 @@
 /home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/x86_64/rnscreens_autolinked_build/CMakeFiles/react_codegen_rnscreens.dir
 /home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/x86_64/rnscreens_autolinked_build/CMakeFiles/edit_cache.dir
 /home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/x86_64/rnscreens_autolinked_build/CMakeFiles/rebuild_cache.dir
+/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/x86_64/RNShareSpec_autolinked_build/CMakeFiles/react_codegen_RNShareSpec.dir
+/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/x86_64/RNShareSpec_autolinked_build/CMakeFiles/edit_cache.dir
+/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/x86_64/RNShareSpec_autolinked_build/CMakeFiles/rebuild_cache.dir
+/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/x86_64/rnviewshot_autolinked_build/CMakeFiles/react_codegen_rnviewshot.dir
+/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/x86_64/rnviewshot_autolinked_build/CMakeFiles/edit_cache.dir
+/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/x86_64/rnviewshot_autolinked_build/CMakeFiles/rebuild_cache.dir

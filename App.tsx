@@ -12,6 +12,8 @@ import { LangProvider, useLang } from './src/lib/LangContext';
 import { tr } from './src/lib/i18n';
 import { fetchGofConfig, GofConfig } from './src/lib/gofConfig';
 import GofModal from './src/components/GofModal';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ResultsScreen from './src/screens/ResultsScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import GeneratorScreen from './src/screens/GeneratorScreen';
@@ -185,10 +187,13 @@ function GameSwitcher({ game, setGame }) {
 }
 
 // ── Main App ──────────────────────────────────────────────────────────────────
+const BANNER_ID = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-6984775309510247/2111888204';
+
 function MainApp() {
   const [game, setGame]       = useState('4D');
   const [gofConfig, setGofConfig] = useState<GofConfig | null>(null);
   const { lang } = useLang();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     fetchGofConfig().then(setGofConfig).catch(() => {});
@@ -244,6 +249,15 @@ function MainApp() {
         </NavigationContainer>
       </SafeAreaView>
 
+      {/* Global Banner Ad — loads once on app start */}
+      <View style={[styles.bannerContainer, { paddingBottom: insets.bottom }]}>
+        <BannerAd
+          unitId={BANNER_ID}
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+          requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+        />
+      </View>
+
       {/* GoF FAB — only show when gof_active = true */}
       {gofConfig !== null && gofConfig.active && (
         <GofFAB lang={lang as 'EN' | 'ZH'} config={gofConfig} />
@@ -289,6 +303,7 @@ const styles = StyleSheet.create({
   switcherActive:     { backgroundColor: GOLD },
   switcherText:       { color: 'rgba(255,255,255,0.5)', fontWeight: '600', fontSize: 13 },
   switcherTextActive: { color: '#fff' },
+  bannerContainer:    { alignItems: 'center', backgroundColor: '#fff', borderTopWidth: 0.5, borderColor: '#eee' },
 });
 
 const gofStyles = StyleSheet.create({

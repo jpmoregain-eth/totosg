@@ -49,6 +49,8 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/arm64-v8a/pagerview_autolinked_build/cmake_install.cmake")
   include("/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/arm64-v8a/safeareacontext_autolinked_build/cmake_install.cmake")
   include("/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/arm64-v8a/rnscreens_autolinked_build/cmake_install.cmake")
+  include("/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/arm64-v8a/RNShareSpec_autolinked_build/cmake_install.cmake")
+  include("/home/ubuntu/TotoSG/android/app/.cxx/Debug/5b53l70n/arm64-v8a/rnviewshot_autolinked_build/cmake_install.cmake")
 
 endif()
 

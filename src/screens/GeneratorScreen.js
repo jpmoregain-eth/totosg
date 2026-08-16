@@ -3,10 +3,9 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator, Modal,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RewardedAd, RewardedAdEventType, AdEventType, TestIds, BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
+import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-native-google-mobile-ads';
 import { useLang } from '../lib/LangContext';
 import { tr } from '../lib/i18n';
 
@@ -17,7 +16,6 @@ const PURPLE = '#534AB7';
 const GOLD = '#C9A84C';
 
 const REWARDED_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/6047752765';
-const BANNER_ID = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-6984775309510247/2111888204';
 
 const rewarded = RewardedAd.createForAdRequest(REWARDED_ID, { requestNonPersonalizedAdsOnly: true });
 
@@ -133,7 +131,6 @@ function SupportPrompt({ visible, onWatchAd, onSkip, lang }) {
 }
 
 export default function GeneratorScreen() {
-  const insets = useSafeAreaInsets();
   const { lang } = useLang();
   const [allDraws, setAllDraws] = useState({});
   const [sets, setSets] = useState([]);
@@ -229,9 +226,6 @@ export default function GeneratorScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      <View style={[styles.bannerContainer,{paddingBottom:insets.bottom}]}>
-        <BannerAd unitId={BANNER_ID} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} requestOptions={{requestNonPersonalizedAdsOnly:true}}/>
-      </View>
 
       <SupportPrompt visible={showPrompt} onWatchAd={handleWatchAd} onSkip={handleSkip} lang={lang} />
     </View>
@@ -254,7 +248,6 @@ const styles = StyleSheet.create({
   numsRow:{flexDirection:'row',justifyContent:'center',gap:8},
   ball:{width:38,height:38,borderRadius:19,justifyContent:'center',alignItems:'center'}, ballText:{color:'#fff',fontSize:13,fontWeight:'600'},
   btn:{backgroundColor:DARK,borderRadius:10,padding:14,alignItems:'center',marginTop:4,marginBottom:16}, btnText:{color:'#fff',fontSize:14,fontWeight:'500'},
-  bannerContainer:{alignItems:'center',paddingTop:6,borderTopWidth:0.5,borderColor:'#eee',backgroundColor:'#fff'},
   // Support prompt
   promptOverlay:{flex:1,backgroundColor:'rgba(0,0,0,0.5)',justifyContent:'center',alignItems:'center',padding:32},
   promptBox:{backgroundColor:'#fff',borderRadius:20,padding:24,alignItems:'center',width:'100%'},
