@@ -12,6 +12,7 @@ import { LangProvider, useLang } from './src/lib/LangContext';
 import { tr } from './src/lib/i18n';
 import { fetchGofConfig, GofConfig } from './src/lib/gofConfig';
 import GofModal from './src/components/GofModal';
+import SifuModal from './src/components/SifuModal';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ResultsScreen from './src/screens/ResultsScreen';
@@ -27,7 +28,11 @@ const DARK   = '#1a1a2e';
 const PURPLE = '#7c6ff7';
 const GOLD   = '#C9A84C';
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const FAB_SIZE = 72;
+
+// Sidebar constants
+const SIDEBAR_W    = 80;   // width of expanded sidebar (icon + label)
+const HAMBURGER_W  = 20;   // width of collapsed hamburger tab
+const AUTO_DISMISS = 3000; // ms before sidebar auto-collapses
 
 // ── Teaser Dialog (shown when gof_feature_active = false) ────────────────────
 function TeaserDialog({ visible, onClose, lang, config }: {
@@ -52,90 +57,92 @@ function TeaserDialog({ visible, onClose, lang, config }: {
   );
 }
 
-// ── GoF FAB ───────────────────────────────────────────────────────────────────
-function GofFAB({ lang, config }: { lang: 'EN' | 'ZH'; config: GofConfig | null }) {
+// ── Feature Sidebar (GoF + Sifu) ──────────────────────────────────────────────
+function FeatureSidebar({ lang, config }: { lang: 'EN' | 'ZH'; config: GofConfig | null }) {
+  const [expanded, setExpanded]           = useState(true);  // starts open on launch
   const [teaserVisible, setTeaserVisible] = useState(false);
-  const [gofVisible,    setGofVisible]    = useState(false);
-  const [showHint, setShowHint] = useState(true);
-  const hintOpacity = useRef(new Animated.Value(1)).current;
+  const [gofVisible, setGofVisible]       = useState(false);
+  const [sifuVisible, setSifuVisible]     = useState(false);
+  const [sifuUnlocked, setSifuUnlocked]   = useState(false); // in-memory only, resets on app close
+  const slideAnim = useRef(new Animated.Value(0)).current;  // 0 = expanded, 1 = collapsed
+  const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const initX = SCREEN_W / 2 - FAB_SIZE / 2;
-  const initY = SCREEN_H / 2 - FAB_SIZE / 2;
-
-  const pan     = useRef(new Animated.ValueXY({ x: initX, y: initY })).current;
-  const lastPos = useRef({ x: initX, y: initY });
-  const isDragging = useRef(false);
-
-  // Hide hint after 5s
-  useEffect(() => {
-    const t = setTimeout(() => {
-      Animated.timing(hintOpacity, { toValue: 0, duration: 500, useNativeDriver: false }).start(() => setShowHint(false));
-    }, 5000);
-    return () => clearTimeout(t);
-  }, []);
-
-  // Bob
-  const bobAnim = useRef(new Animated.Value(0)).current;
+  // Pulse animation for hamburger tab
+  const pulseAnim = useRef(new Animated.Value(0.6)).current;
   useEffect(() => {
     Animated.loop(Animated.sequence([
-      Animated.timing(bobAnim, { toValue: -8, duration: 1000, useNativeDriver: false }),
-      Animated.timing(bobAnim, { toValue: 0,  duration: 1000, useNativeDriver: false }),
+      Animated.timing(pulseAnim, { toValue: 1.0, duration: 900, useNativeDriver: true }),
+      Animated.timing(pulseAnim, { toValue: 0.6, duration: 900, useNativeDriver: true }),
     ])).start();
   }, []);
 
-  // Pulse
-  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+  // Slide value: 0 = fully open, SIDEBAR_W - HAMBURGER_W = fully collapsed
+  const translateX = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, SIDEBAR_W - HAMBURGER_W],
+  });
+
+  const expand = () => {
+    if (dismissTimer.current) clearTimeout(dismissTimer.current);
+    setExpanded(true);
+    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, friction: 7 }).start();
+    dismissTimer.current = setTimeout(collapse, AUTO_DISMISS);
+  };
+
+  const collapse = () => {
+    setExpanded(false);
+    Animated.spring(slideAnim, { toValue: 1, useNativeDriver: true, friction: 7 }).start();
+  };
+
+  // Auto-expand on mount, then auto-collapse after 3s
   useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(pulseAnim, { toValue: 1.0, duration: 1000, useNativeDriver: false }),
-      Animated.timing(pulseAnim, { toValue: 0.4, duration: 1000, useNativeDriver: false }),
-    ])).start();
+    dismissTimer.current = setTimeout(collapse, AUTO_DISMISS);
+    return () => { if (dismissTimer.current) clearTimeout(dismissTimer.current); };
   }, []);
 
-  const panResponder = useRef(PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dx) > 2 || Math.abs(gs.dy) > 2,
-    onPanResponderGrant: () => {
-      isDragging.current = false;
-      pan.setOffset({ x: lastPos.current.x, y: lastPos.current.y });
-      pan.setValue({ x: 0, y: 0 });
-    },
-    onPanResponderMove: (_, gs) => {
-      if (Math.abs(gs.dx) > 5 || Math.abs(gs.dy) > 5) isDragging.current = true;
-      Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false })(_, gs);
-    },
-    onPanResponderRelease: (_, gs) => {
-      pan.flattenOffset();
-      const currentX = lastPos.current.x + gs.dx;
-      const currentY = lastPos.current.y + gs.dy;
-      const snapX    = currentX + FAB_SIZE / 2 < SCREEN_W / 2 ? 16 : SCREEN_W - FAB_SIZE - 16;
-      const clampedY = Math.max(16, Math.min(SCREEN_H - FAB_SIZE - 80, currentY));
-      Animated.spring(pan, { toValue: { x: snapX, y: clampedY }, useNativeDriver: false, friction: 6 }).start();
-      lastPos.current = { x: snapX, y: clampedY };
-      if (!isDragging.current) {
-        if (config?.featureActive) setGofVisible(true);
-        else setTeaserVisible(true);
-      }
-    },
-  })).current;
+  const handleGofPress = () => {
+    if (config?.featureActive) setGofVisible(true);
+    else setTeaserVisible(true);
+  };
+
+  const handleSifuPress = () => {
+    setSifuVisible(true);
+  };
 
   const iconSource = config?.icon ?? require('./src/assets/GoF.png');
 
   return (
     <>
-      <Animated.View
-        style={[gofStyles.fab, { transform: [{ translateX: pan.x }, { translateY: Animated.add(pan.y, bobAnim) }] }]}
-        {...panResponder.panHandlers}
-      >
-        <Animated.View style={[gofStyles.fabRing, { opacity: pulseAnim }]} />
-        <Image source={iconSource} style={gofStyles.fabImage} resizeMode="contain" />
-        {showHint && (
-          <Animated.View style={[gofStyles.hint, { opacity: hintOpacity }]}>
-            <Text style={gofStyles.hintText} numberOfLines={1}>{lang === 'ZH' ? '拖动/点击' : 'Drag/Tap'}</Text>
+      <Animated.View style={[sidebarStyles.container, { transform: [{ translateX }] }]}>
+
+        {/* Hamburger tab — always visible on left edge, pulses to draw attention */}
+        <TouchableOpacity onPress={expanded ? collapse : expand} activeOpacity={0.7}>
+          <Animated.View style={[sidebarStyles.hamburger, { opacity: pulseAnim }]}>
+            <View style={sidebarStyles.hamburgerLine} />
+            <View style={sidebarStyles.hamburgerLine} />
+            <View style={sidebarStyles.hamburgerLine} />
           </Animated.View>
-        )}
+        </TouchableOpacity>
+
+        {/* Icon buttons */}
+        <View style={sidebarStyles.iconsContainer}>
+
+          {/* GoF button — always default GoF.png in sidebar; seasonal icon lives inside the modal */}
+          <TouchableOpacity style={sidebarStyles.iconBtn} onPress={handleGofPress} activeOpacity={0.8}>
+            <Image source={require('./src/assets/GoF.png')} style={sidebarStyles.iconImage} resizeMode="contain" />
+            <Text style={sidebarStyles.iconLabel} numberOfLines={1}>财神</Text>
+          </TouchableOpacity>
+
+          {/* Sifu button — label always in Chinese */}
+          <TouchableOpacity style={sidebarStyles.iconBtn} onPress={handleSifuPress} activeOpacity={0.8}>
+            <Image source={require('./src/assets/sifu.png')} style={sidebarStyles.iconImage} resizeMode="contain" />
+            <Text style={sidebarStyles.iconLabel} numberOfLines={1}>师父</Text>
+          </TouchableOpacity>
+
+        </View>
       </Animated.View>
 
+      {/* Teaser dialog (GoF not yet active) */}
       <TeaserDialog
         visible={teaserVisible}
         onClose={() => setTeaserVisible(false)}
@@ -143,17 +150,27 @@ function GofFAB({ lang, config }: { lang: 'EN' | 'ZH'; config: GofConfig | null 
         config={config}
       />
 
+      {/* GoF Modal */}
       {config?.featureActive && (
         <GofModal
           visible={gofVisible}
           onClose={() => setGofVisible(false)}
-          fabX={lastPos.current.x}
-          fabY={lastPos.current.y}
-          fabSize={FAB_SIZE}
+          fabX={SCREEN_W - SIDEBAR_W - 10}
+          fabY={SCREEN_H / 2 - 60}
+          fabSize={56}
           lang={lang}
           config={config}
         />
       )}
+
+      {/* Sifu Modal */}
+      <SifuModal
+        visible={sifuVisible}
+        onClose={() => setSifuVisible(false)}
+        lang={lang}
+        sifuUnlocked={sifuUnlocked}
+        onUnlock={() => setSifuUnlocked(true)}
+      />
     </>
   );
 }
@@ -190,7 +207,7 @@ function GameSwitcher({ game, setGame }) {
 const BANNER_ID = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-6984775309510247/2111888204';
 
 function MainApp() {
-  const [game, setGame]       = useState('4D');
+  const [game, setGame]           = useState('4D');
   const [gofConfig, setGofConfig] = useState<GofConfig | null>(null);
   const { lang } = useLang();
   const insets = useSafeAreaInsets();
@@ -258,10 +275,15 @@ function MainApp() {
         />
       </View>
 
-      {/* GoF FAB — only show when gof_active = true */}
+      {/* Feature Sidebar — GoF + Sifu (replaces old draggable FAB) */}
+      {gofConfig !== null && gofConfig.active && (
+        <FeatureSidebar lang={lang as 'EN' | 'ZH'} config={gofConfig} />
+      )}
+
+      {/* OLD GoF FAB — retired in v2.5.0, kept here for reference
       {gofConfig !== null && gofConfig.active && (
         <GofFAB lang={lang as 'EN' | 'ZH'} config={gofConfig} />
-      )}
+      )} */}
     </View>
   );
 }
@@ -284,6 +306,7 @@ export default function App() {
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea:      { flex: 1, backgroundColor: DARK },
   appHeader:     { backgroundColor: DARK, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10 },
@@ -306,12 +329,59 @@ const styles = StyleSheet.create({
   bannerContainer:    { alignItems: 'center', backgroundColor: '#fff', borderTopWidth: 0.5, borderColor: '#eee' },
 });
 
+const sidebarStyles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    right: 0,
+    top: SCREEN_H / 2 - 100,   // vertically centred
+    width: SIDEBAR_W,
+    flexDirection: 'row',
+    zIndex: 999,
+  },
+  hamburger: {
+    width: HAMBURGER_W,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 16,
+    backgroundColor: GOLD,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+  },
+  hamburgerLine: {
+    width: 12,
+    height: 2,
+    backgroundColor: '#fff',
+    borderRadius: 1,
+  },
+  iconsContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(13,13,26,0.92)',
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    gap: 12,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+  },
+  iconBtn: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  iconImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+  },
+  iconLabel: {
+    color: GOLD,
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+});
+
+// Old GofFAB styles — retained for reference, FAB retired in v2.5.0
 const gofStyles = StyleSheet.create({
-  fab:     { position: 'absolute', width: FAB_SIZE, height: FAB_SIZE, alignItems: 'center', justifyContent: 'center', zIndex: 999 },
-  fabRing: { position: 'absolute', width: FAB_SIZE, height: FAB_SIZE, borderRadius: FAB_SIZE / 2, borderWidth: 2, borderColor: GOLD },
-  fabImage:{ width: FAB_SIZE - 8, height: FAB_SIZE - 8, borderRadius: (FAB_SIZE - 8) / 2 },
-  hint:    { position: 'absolute', top: FAB_SIZE + 6, alignSelf: 'center', backgroundColor: DARK, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: GOLD },
-  hintText:{ color: GOLD, fontSize: 11, fontWeight: '600', textAlign: 'center' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   dialog:  { backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', width: '100%' },
   dialogImage:  { width: 120, height: 120, marginBottom: 12 },
