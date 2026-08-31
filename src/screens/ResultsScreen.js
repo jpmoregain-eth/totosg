@@ -4,22 +4,73 @@ import {
   ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
-
 import { useLang } from '../lib/LangContext';
-import { tr } from '../lib/i18n';
 
-const DARK = '#1a1a2e';
-const ORANGE = '#FF6B35';
-const GOLD = '#C9A84C';
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const RED   = '#ED2939';
+const PAPER = '#FFFFFF';
+const INK   = '#1A1A1A';
+const MUTE  = '#7C7C7C';
+const FAINT = '#9A9A9A';
+const RULE  = '#E4DEDE';
+const TINT  = '#FDF0F1';
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatDrawDate(dateStr, lang) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (lang === 'ZH') {
+    const days = ['周日','周一','周二','周三','周四','周五','周六'];
+    return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${days[d.getDay()]}`;
+  }
+  const days   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
 
+function useCountdown(targetStr) {
+  const [display, setDisplay] = useState('--:--:--');
+  useEffect(() => {
+    if (!targetStr) return;
+    // targetStr format from DB: "Mon, 25 Aug 2025" — parse to next 6:30 PM SGT
+    const parts = targetStr.match(/(\d+)\s+(\w+)\s+(\d+)/);
+    if (!parts) return;
+    const months = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11 };
+    const target = new Date(
+      parseInt(parts[3]), months[parts[2]], parseInt(parts[1]), 18, 30, 0
+    );
+    const tick = () => {
+      const diff = target - Date.now();
+      if (diff <= 0) { setDisplay('00:00:00'); return; }
+      const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+      const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+      setDisplay(`${h}:${m}:${s}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [targetStr]);
+  return display;
+}
+
+function fmtMoney(n) {
+  if (!n) return '-';
+  return '$' + Number(n).toLocaleString('en-SG');
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function ResultsScreen() {
   const { lang } = useLang();
-  const [draw, setDraw] = useState(null);
-  const [prizes, setPrizes] = useState([]);
-  const [jackpot, setJackpot] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const ZH = lang === 'ZH';
+
+  const [draw,      setDraw]      = useState(null);
+  const [prizes,    setPrizes]    = useState([]);
+  const [jackpot,   setJackpot]   = useState(null);
+  const [loading,   setLoading]   = useState(true);
+  const [refreshing,setRefreshing]= useState(false);
+
+  const countdown = useCountdown(jackpot?.next_draw_date);
 
   const fetchLatest = async () => {
     const { data: drawData } = await supabase
@@ -39,7 +90,6 @@ export default function ResultsScreen() {
       setPrizes(prizeData || []);
     }
 
-    // Fetch next jackpot info
     const { data: jackpotData } = await supabase
       .from('toto_jackpot')
       .select('*')
@@ -55,143 +105,170 @@ export default function ResultsScreen() {
   const onRefresh = () => { setRefreshing(true); fetchLatest(); };
 
   if (loading) return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" color={DARK} />
+    <View style={s.center}>
+      <ActivityIndicator size="large" color={RED} />
     </View>
   );
 
-  const nums = draw ? [draw.n1, draw.n2, draw.n3, draw.n4, draw.n5, draw.n6] : [];
-  const dateStr = draw ? new Date(draw.draw_date).toLocaleDateString('en-SG', {
-    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
-  }) : '';
+  const nums       = draw ? [draw.n1, draw.n2, draw.n3, draw.n4, draw.n5, draw.n6] : [];
+  const dateStr    = formatDrawDate(draw?.draw_date, lang);
+  const group1Prize = prizes.find(p => p.prize_group === 1);
 
-  const groupLabel = (g) => {
-    const map = {
-      1: tr('group1', lang), 2: tr('group2', lang), 3: tr('group3', lang),
-      4: tr('group4', lang), 5: tr('group5', lang), 6: tr('group6', lang), 7: tr('group7', lang),
-    };
-    return map[g] || `Group ${g}`;
+  // Prize table — skip group 1 (shown in hero block)
+  const tableRows = prizes.filter(p => p.prize_group !== 1);
+
+  const grpLabel = (g) => {
+    if (ZH) {
+      const map = { 2:'二奖', 3:'三奖', 4:'四奖', 5:'五奖', 6:'六奖', 7:'七奖' };
+      return map[g] || `GRP ${g}`;
+    }
+    return `GRP ${g}`;
   };
 
-  const formattedJackpot = jackpot?.jackpot_amount
-    ? '$' + Number(jackpot.jackpot_amount).toLocaleString()
-    : null;
-
   return (
-    <View style={styles.wrapper}>
-      <ScrollView
-        style={styles.container}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        <View style={styles.header}>
-          <View style={styles.badge}>
-            <View style={styles.badgeDot} />
-            <Text style={styles.badgeText}>{tr('drawNo', lang)} {draw?.draw_no} · {dateStr}</Text>
-          </View>
+    <ScrollView
+      style={s.scroll}
+      contentContainerStyle={s.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={RED} />}
+    >
+      {/* ── Draw header ── */}
+      <View style={s.drawHeader}>
+        <Text style={s.drawNo}>DRAW #{draw?.draw_no}</Text>
+        <Text style={s.drawDate}>{dateStr}</Text>
+      </View>
 
-          <Text style={styles.sectionLabel}>{tr('results', lang)}</Text>
-          <View style={styles.numbersRow}>
-            {nums.map((n, i) => (
-              <View key={i} style={styles.ball}>
-                <Text style={styles.ballText}>{n}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={styles.addRow}>
-            <View style={[styles.ball, styles.ballAdd]}>
-              <Text style={styles.ballText}>{draw?.additional}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.jackpot}>
-            ${draw?.group1_prize ? Number(draw.group1_prize).toLocaleString() : 'N/A'}
-          </Text>
-          <Text style={styles.jackpotLabel}>{tr('group1', lang)} {tr('prize', lang)}</Text>
-        </View>
-
-        {/* Next Draw Jackpot Banner */}
-        {jackpot && formattedJackpot && (
-          <View style={styles.nextDrawBanner}>
-            <View style={styles.nextDrawLeft}>
-              <Text style={styles.nextDrawLabel}>
-                🎰 {lang === 'ZH' ? '下一期' : 'Next Draw'}
-              </Text>
-              <Text style={styles.nextDrawDate}>{jackpot.next_draw_date}</Text>
-            </View>
-            <View style={styles.nextDrawRight}>
-              <Text style={styles.nextDrawEstLabel}>
-                {lang === 'ZH' ? '估计奖金' : 'Est. Jackpot'}
-              </Text>
-              <Text style={styles.nextDrawAmount}>{formattedJackpot}</Text>
-            </View>
-          </View>
-        )}
-
-        <View style={styles.tableContainer}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHead, { flex: 1.2 }]}>{tr('group1', lang).replace('1','')}</Text>
-            <Text style={[styles.tableHead, { flex: 1, textAlign: 'center' }]}>{tr('shares', lang)}</Text>
-            <Text style={[styles.tableHead, { flex: 1.5, textAlign: 'right' }]}>{tr('prize', lang)}</Text>
-          </View>
-          {prizes.map((p) => (
-            <View key={p.prize_group} style={styles.tableRow}>
-              <Text style={[styles.tableCell, { flex: 1.2 }]}>{groupLabel(p.prize_group)}</Text>
-              <Text style={[styles.tableCell, { flex: 1, textAlign: 'center' }]}>
-                {p.winning_shares > 0 ? p.winning_shares.toLocaleString() : '-'}
-              </Text>
-              <Text style={[styles.tableCell, { flex: 1.5, textAlign: 'right', fontWeight: '500' }]}>
-                {p.share_amount ? '$' + Number(p.share_amount).toLocaleString() : '-'}
-              </Text>
+      {/* ── Winning numbers ── */}
+      <View style={s.section}>
+        <Text style={s.fieldLabel}>{ZH ? '中奖号码' : 'WINNING NUMBERS'}</Text>
+        <View style={s.ballsRow}>
+          {nums.map((n, i) => (
+            <View key={i} style={s.ball}>
+              <Text style={s.ballText}>{String(n).padStart(2, '0')}</Text>
             </View>
           ))}
         </View>
-      </ScrollView>
 
-    </View>
+        {/* Additional ball */}
+        <View style={s.additionalRow}>
+          <View style={s.ballRed}>
+            <Text style={s.ballRedText}>{String(draw?.additional).padStart(2, '0')}</Text>
+          </View>
+          <Text style={s.additionalLabel}>{ZH ? '附加号码' : 'ADDITIONAL'}</Text>
+        </View>
+      </View>
+
+      <View style={s.divider} />
+
+      {/* ── Group 1 hero ── */}
+      <View style={s.section}>
+        <Text style={s.fieldLabel}>{ZH ? '头奖' : 'GROUP 1 PRIZE'}</Text>
+        <View style={s.heroRow}>
+          <Text style={s.heroAmount}>
+            {draw?.group1_prize
+              ? '$' + Number(draw.group1_prize).toLocaleString('en-SG')
+              : fmtMoney(group1Prize?.share_amount)}
+          </Text>
+          <View style={s.heroShares}>
+            <Text style={s.heroSharesLabel}>{ZH ? '得奖人数' : 'SHARES'}</Text>
+            <Text style={s.heroSharesVal}>{group1Prize?.winning_shares ?? '-'}</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={s.divider} />
+
+      {/* ── Est. Next Jackpot ── */}
+      {jackpot && (
+        <View style={s.jackpotCard}>
+          <View>
+            <Text style={s.jackpotCardLabel}>{ZH ? '下期预计头奖' : 'EST. NEXT JACKPOT'}</Text>
+            <Text style={s.jackpotCardAmt}>
+              {'$' + Number(jackpot.jackpot_amount).toLocaleString('en-SG')}
+            </Text>
+          </View>
+          <View style={s.jackpotCardRight}>
+            <Text style={s.jackpotCardLabel}>{ZH ? '距离截止' : 'CLOSES IN'}</Text>
+            <Text style={s.jackpotCardTimer}>{countdown}</Text>
+          </View>
+        </View>
+      )}
+
+      <View style={s.divider} />
+
+      {/* ── Prize table (GRP 2–7) ── */}
+      <View style={s.section}>
+        <Text style={s.fieldLabel}>{ZH ? '奖项分组' : 'PRIZE GROUPS'}</Text>
+
+        {/* Table header */}
+        <View style={s.tableHeader}>
+          <Text style={[s.tableHead, { flex: 1 }]}>{ZH ? '组别' : 'GRP'}</Text>
+          <Text style={[s.tableHead, { flex: 1.5, textAlign: 'center' }]}>{ZH ? '得奖人数' : 'SHARES'}</Text>
+          <Text style={[s.tableHead, { flex: 2, textAlign: 'right' }]}>{ZH ? '每份奖金' : 'PER SHARE'}</Text>
+        </View>
+
+        {tableRows.map((p) => (
+          <View key={p.prize_group} style={s.tableRow}>
+            <Text style={[s.tableCell, { flex: 1 }]}>{grpLabel(p.prize_group)}</Text>
+            <Text style={[s.tableCellMute, { flex: 1.5, textAlign: 'center' }]}>
+              {p.winning_shares > 0 ? p.winning_shares.toLocaleString() : '-'}
+            </Text>
+            <Text style={[s.tableCell, { flex: 2, textAlign: 'right' }]}>
+              {p.share_amount ? fmtMoney(p.share_amount) : '-'}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={{ height: 16 }} />
+    </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: '#fff' },
-  container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { backgroundColor: DARK, padding: 20, paddingTop: 40 },
-  badge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, alignSelf: 'flex-start', marginBottom: 16 },
-  badgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#7c6ff7', marginRight: 6 },
-  badgeText: { color: '#fff', fontSize: 12 },
-  sectionLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 10 },
-  numbersRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  ball: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  ballAdd: { backgroundColor: ORANGE },
-  ballText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  addRow: { alignItems: 'center', marginBottom: 20 },
-  jackpot: { color: '#fff', fontSize: 28, fontWeight: '600' },
-  jackpotLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 4 },
+// ── Styles ────────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  scroll:   { flex: 1, backgroundColor: PAPER },
+  content:  { paddingHorizontal: 16, paddingTop: 12 },
+  center:   { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: PAPER },
 
-  // Next draw jackpot banner
-  nextDrawBanner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: DARK,
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: GOLD + '55',
-  },
-  nextDrawLeft: { flex: 1 },
-  nextDrawLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginBottom: 3 },
-  nextDrawDate: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  nextDrawRight: { alignItems: 'flex-end' },
-  nextDrawEstLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginBottom: 3 },
-  nextDrawAmount: { color: GOLD, fontSize: 20, fontWeight: '700' },
+  // Draw header
+  drawHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, borderBottomWidth: 1, borderColor: RED, marginBottom: 14 },
+  drawNo:     { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 11, color: INK, letterSpacing: 1.5 },
+  drawDate:   { fontFamily: 'IBMPlexMono-Medium', fontSize: 10, color: MUTE, letterSpacing: 1.2 },
 
-  tableContainer: { padding: 16 },
-  tableHeader: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 0.5, borderColor: '#ddd', marginBottom: 4 },
-  tableHead: { fontSize: 11, color: '#999', fontWeight: '500' },
-  tableRow: { flexDirection: 'row', paddingVertical: 9, borderBottomWidth: 0.5, borderColor: '#f0f0f0' },
-  tableCell: { fontSize: 13, color: '#222' },
+  // Section
+  section:    { paddingVertical: 12 },
+  fieldLabel: { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 9, color: RED, letterSpacing: 2, marginBottom: 10 },
+  divider:    { height: 1, backgroundColor: RULE },
+
+  // Balls
+  ballsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  ball:     { flex: 1, marginHorizontal: 2, aspectRatio: 1, borderWidth: 1, borderColor: RED, backgroundColor: TINT, alignItems: 'center', justifyContent: 'center' },
+  ballText: { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 17, color: INK, includeFontPadding: false, textAlignVertical: 'center' },
+
+  // Additional ball
+  additionalRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  ballRed:        { width: 48, height: 48, borderWidth: 1, borderColor: RED, backgroundColor: RED, alignItems: 'center', justifyContent: 'center' },
+  ballRedText:    { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 17, color: PAPER, includeFontPadding: false, textAlignVertical: 'center' },
+  additionalLabel:{ fontFamily: 'IBMPlexMono-Medium', fontSize: 10, color: MUTE, letterSpacing: 2 },
+
+  // Group 1 hero
+  heroRow:        { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  heroAmount:     { fontFamily: 'IBMPlexMono-Bold', fontSize: 36, color: INK, letterSpacing: -0.5, flex: 1 },
+  heroShares:     { alignItems: 'flex-end', paddingBottom: 4 },
+  heroSharesLabel:{ fontFamily: 'IBMPlexMono-Regular', fontSize: 9, color: FAINT, letterSpacing: 1, marginBottom: 3 },
+  heroSharesVal:  { fontFamily: 'IBMPlexMono-Bold', fontSize: 22, color: INK },
+
+  // Prize table
+  tableHeader:   { flexDirection: 'row', paddingBottom: 7, borderBottomWidth: 1, borderColor: RED, marginBottom: 2 },
+  tableHead:     { fontFamily: 'IBMPlexMono-Medium', fontSize: 9, color: FAINT, letterSpacing: 1.5 },
+  tableRow:      { flexDirection: 'row', paddingVertical: 11, borderBottomWidth: 1, borderStyle: 'dotted', borderColor: RULE },
+  tableCell:     { fontFamily: 'IBMPlexMono-Medium', fontSize: 14, color: INK },
+  tableCellMute: { fontFamily: 'IBMPlexMono-Regular', fontSize: 14, color: MUTE },
+
+  // Jackpot card
+  jackpotCard:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: RULE, padding: 14, marginTop: 4 },
+  jackpotCardLabel: { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 9, color: MUTE, letterSpacing: 1.5, marginBottom: 5 },
+  jackpotCardAmt:   { fontFamily: 'IBMPlexMono-Bold', fontSize: 22, color: INK },
+  jackpotCardRight: { alignItems: 'flex-end' },
+  jackpotCardTimer: { fontFamily: 'IBMPlexMono-Bold', fontSize: 22, color: RED, letterSpacing: 1 },
 });

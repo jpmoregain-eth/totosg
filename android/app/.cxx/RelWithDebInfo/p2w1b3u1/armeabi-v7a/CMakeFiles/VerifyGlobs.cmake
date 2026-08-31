@@ -36,6 +36,44 @@ if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   file(TOUCH_NOCREATE "/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/armeabi-v7a/CMakeFiles/cmake.verify_globs")
 endif()
 
+# react_codegen_SRCS at /home/ubuntu/TotoSG/node_modules/@react-native-firebase/app/android/src/reactnative/java/io/invertase/firebase/app/generated/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/app/android/src/reactnative/java/io/invertase/firebase/app/generated/jni/*.cpp")
+set(OLD_GLOB
+  "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/app/android/src/reactnative/java/io/invertase/firebase/app/generated/jni/RNFBAppTurboModules-generated.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/armeabi-v7a/CMakeFiles/cmake.verify_globs")
+endif()
+
+# react_codegen_SRCS at /home/ubuntu/TotoSG/node_modules/@react-native-firebase/app/android/src/reactnative/java/io/invertase/firebase/app/generated/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/app/android/src/reactnative/java/io/invertase/firebase/app/generated/jni/react/renderer/components/RNFBAppTurboModules/*.cpp")
+set(OLD_GLOB
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/armeabi-v7a/CMakeFiles/cmake.verify_globs")
+endif()
+
+# react_codegen_SRCS at /home/ubuntu/TotoSG/node_modules/@react-native-firebase/messaging/android/src/main/java/io/invertase/firebase/messaging/generated/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/messaging/android/src/main/java/io/invertase/firebase/messaging/generated/jni/*.cpp")
+set(OLD_GLOB
+  "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/messaging/android/src/main/java/io/invertase/firebase/messaging/generated/jni/RNFBMessagingTurboModules-generated.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/armeabi-v7a/CMakeFiles/cmake.verify_globs")
+endif()
+
+# react_codegen_SRCS at /home/ubuntu/TotoSG/node_modules/@react-native-firebase/messaging/android/src/main/java/io/invertase/firebase/messaging/generated/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/messaging/android/src/main/java/io/invertase/firebase/messaging/generated/jni/react/renderer/components/RNFBMessagingTurboModules/*.cpp")
+set(OLD_GLOB
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/armeabi-v7a/CMakeFiles/cmake.verify_globs")
+endif()
+
 # react_codegen_SRCS at /home/ubuntu/TotoSG/node_modules/react-native-google-mobile-ads/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/ubuntu/TotoSG/node_modules/react-native-google-mobile-ads/android/build/generated/source/codegen/jni/*.cpp")
 set(OLD_GLOB

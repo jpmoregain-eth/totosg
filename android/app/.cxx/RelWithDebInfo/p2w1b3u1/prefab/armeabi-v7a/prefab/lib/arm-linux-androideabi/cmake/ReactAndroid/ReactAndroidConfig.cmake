@@ -1,8 +1,8 @@
 if(NOT TARGET ReactAndroid::hermestooling)
 add_library(ReactAndroid::hermestooling SHARED IMPORTED)
 set_target_properties(ReactAndroid::hermestooling PROPERTIES
-    IMPORTED_LOCATION "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/hermestooling/libs/android.armeabi-v7a/libhermestooling.so"
-    INTERFACE_INCLUDE_DIRECTORIES "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/hermestooling/include"
+    IMPORTED_LOCATION "/home/ubuntu/.gradle/caches/9.0.0/transforms/2f6946f2ad13b1e8702de8cf46bb6048/transformed/react-android-0.84.1-release/prefab/modules/hermestooling/libs/android.armeabi-v7a/libhermestooling.so"
+    INTERFACE_INCLUDE_DIRECTORIES "/home/ubuntu/.gradle/caches/9.0.0/transforms/2f6946f2ad13b1e8702de8cf46bb6048/transformed/react-android-0.84.1-release/prefab/modules/hermestooling/include"
     INTERFACE_LINK_LIBRARIES ""
 )
 endif()
@@ -10,8 +10,8 @@ endif()
 if(NOT TARGET ReactAndroid::jsi)
 add_library(ReactAndroid::jsi SHARED IMPORTED)
 set_target_properties(ReactAndroid::jsi PROPERTIES
-    IMPORTED_LOCATION "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/jsi/libs/android.armeabi-v7a/libjsi.so"
-    INTERFACE_INCLUDE_DIRECTORIES "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/jsi/include"
+    IMPORTED_LOCATION "/home/ubuntu/.gradle/caches/9.0.0/transforms/2f6946f2ad13b1e8702de8cf46bb6048/transformed/react-android-0.84.1-release/prefab/modules/jsi/libs/android.armeabi-v7a/libjsi.so"
+    INTERFACE_INCLUDE_DIRECTORIES "/home/ubuntu/.gradle/caches/9.0.0/transforms/2f6946f2ad13b1e8702de8cf46bb6048/transformed/react-android-0.84.1-release/prefab/modules/jsi/include"
     INTERFACE_LINK_LIBRARIES ""
 )
 endif()
@@ -19,8 +19,8 @@ endif()
 if(NOT TARGET ReactAndroid::reactnative)
 add_library(ReactAndroid::reactnative SHARED IMPORTED)
 set_target_properties(ReactAndroid::reactnative PROPERTIES
-    IMPORTED_LOCATION "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/reactnative/libs/android.armeabi-v7a/libreactnative.so"
-    INTERFACE_INCLUDE_DIRECTORIES "/home/ubuntu/.gradle/caches/9.0.0/transforms/4524a298039f3f6c65513efd568c050a/transformed/react-android-0.84.1-release/prefab/modules/reactnative/include"
+    IMPORTED_LOCATION "/home/ubuntu/.gradle/caches/9.0.0/transforms/2f6946f2ad13b1e8702de8cf46bb6048/transformed/react-android-0.84.1-release/prefab/modules/reactnative/libs/android.armeabi-v7a/libreactnative.so"
+    INTERFACE_INCLUDE_DIRECTORIES "/home/ubuntu/.gradle/caches/9.0.0/transforms/2f6946f2ad13b1e8702de8cf46bb6048/transformed/react-android-0.84.1-release/prefab/modules/reactnative/include"
     INTERFACE_LINK_LIBRARIES ""
 )
 endif()

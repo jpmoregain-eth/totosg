@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "399918748901",
+    "project_id": "totosg-37ea6",
+    "storage_bucket": "totosg-37ea6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:399918748901:android:ffa3ac6b4fbe7a7038300c",
+        "android_client_info": {
+          "package_name": "com.totosg"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDcFynUGoCsNjRxLHbKtFMKlyM2gbaJlB0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

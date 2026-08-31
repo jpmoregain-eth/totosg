@@ -51,6 +51,26 @@ rule CXX_COMPILER__react_codegen_rnasyncstorage_RelWithDebInfo
 #############################################
 # Rule for compiling CXX files.
 
+rule CXX_COMPILER__react_codegen_RNFBAppTurboModules_RelWithDebInfo
+  depfile = $DEP_FILE
+  deps = gcc
+  command = /home/ubuntu/Android/Sdk/ndk/27.1.12297006/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=x86_64-none-linux-android24 --sysroot=/home/ubuntu/Android/Sdk/ndk/27.1.12297006/toolchains/llvm/prebuilt/linux-x86_64/sysroot $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
+  description = Building CXX object $out
+
+
+#############################################
+# Rule for compiling CXX files.
+
+rule CXX_COMPILER__react_codegen_RNFBMessagingTurboModules_RelWithDebInfo
+  depfile = $DEP_FILE
+  deps = gcc
+  command = /home/ubuntu/Android/Sdk/ndk/27.1.12297006/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=x86_64-none-linux-android24 --sysroot=/home/ubuntu/Android/Sdk/ndk/27.1.12297006/toolchains/llvm/prebuilt/linux-x86_64/sysroot $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
+  description = Building CXX object $out
+
+
+#############################################
+# Rule for compiling CXX files.
+
 rule CXX_COMPILER__react_codegen_RNGoogleMobileAdsSpec_RelWithDebInfo
   depfile = $DEP_FILE
   deps = gcc

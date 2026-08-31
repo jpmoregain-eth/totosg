@@ -45,6 +45,8 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/x86/rnasyncstorage_autolinked_build/cmake_install.cmake")
+  include("/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/x86/RNFBAppTurboModules_autolinked_build/cmake_install.cmake")
+  include("/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/x86/RNFBMessagingTurboModules_autolinked_build/cmake_install.cmake")
   include("/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/x86/RNGoogleMobileAdsSpec_autolinked_build/cmake_install.cmake")
   include("/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/x86/pagerview_autolinked_build/cmake_install.cmake")
   include("/home/ubuntu/TotoSG/android/app/.cxx/RelWithDebInfo/p2w1b3u1/x86/safeareacontext_autolinked_build/cmake_install.cmake")

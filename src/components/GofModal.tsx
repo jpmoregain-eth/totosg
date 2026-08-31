@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, Image, Modal, StyleSheet, ScrollView,
   TouchableOpacity, Animated, Dimensions,
-  Share, Linking, ActivityIndicator,
+  Share, ActivityIndicator, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
 import RNShare from 'react-native-share';
 import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-native-google-mobile-ads';
@@ -11,68 +12,46 @@ import { GofConfig } from '../lib/gofConfig';
 import { GofInputs, GofProfile, GofNumbers, computeProfile, generateNumbers, SoulColour, Gender } from '../lib/gofEngine';
 import GofShareCard from './GofShareCard';
 
-const { width: SW, height: SH } = Dimensions.get('window');
-const DARK    = '#0d0d1a';
-const CARD    = '#1a1a2e';
-const PURPLE  = '#7c6ff7';
-const GOLD    = '#C9A84C';
-const GOLD2   = '#F0D080';
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const RED   = '#ED2939';
+const PAPER = '#FFFFFF';
+const TINT  = '#FDF0F1';
+const INK   = '#1A1A1A';
+const MUTE  = '#7C7C7C';
+const FAINT = '#9A9A9A';
+const RULE  = '#E4DEDE';
+const DARK  = '#0d0d1a';
+const GOLD  = '#C9A84C';
 
-const CARD_H  = SH * 0.82;
+const { width: SW, height: SH } = Dimensions.get('window');
 
 const GOF_REWARDED_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/3044234765';
 const rewarded = RewardedAd.createForAdRequest(GOF_REWARDED_ID, { requestNonPersonalizedAdsOnly: true });
 
-const COLOURS: { key: SoulColour; hex: string; label: string; labelZH: string }[] = [
-  { key: 'red',    hex: '#E24B4A', label: 'Red',    labelZH: '红' },
-  { key: 'yellow', hex: '#F5C518', label: 'Yellow', labelZH: '黄' },
-  { key: 'green',  hex: '#4CAF50', label: 'Green',  labelZH: '绿' },
-  { key: 'white',  hex: '#CCCCCC', label: 'White',  labelZH: '白' },
-  { key: 'blue',   hex: '#185FA5', label: 'Blue',   labelZH: '蓝' },
+const COLOURS: { key: SoulColour; hex: string; labelEN: string; labelZH: string }[] = [
+  { key: 'red',    hex: '#ED2939', labelEN: 'RED',    labelZH: '红' },
+  { key: 'yellow', hex: '#C9A84C', labelEN: 'YELLOW', labelZH: '黄' },
+  { key: 'green',  hex: '#2D6A4F', labelEN: 'GREEN',  labelZH: '绿' },
+  { key: 'white',  hex: '#E8E8E8', labelEN: 'WHITE',  labelZH: '白' },
+  { key: 'blue',   hex: '#1B4F8A', labelEN: 'BLUE',   labelZH: '蓝' },
 ];
 
-function NumPicker({ value, min, max, onChange, label }: {
-  value: number; min: number; max: number; onChange: (v: number) => void; label: string;
-}) {
-  return (
-    <View style={s.numGroup}>
-      <Text style={s.numLabel}>{label}</Text>
-      <View style={s.numPicker}>
-        <TouchableOpacity style={s.numBtn} onPress={() => onChange(Math.max(min, value - 1))}>
-          <Text style={s.numBtnText}>−</Text>
-        </TouchableOpacity>
-        <Text style={s.numVal}>{String(value).padStart(2, '0')}</Text>
-        <TouchableOpacity style={s.numBtn} onPress={() => onChange(Math.min(max, value + 1))}>
-          <Text style={s.numBtnText}>+</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-function ProfileRow({ icon, label }: { icon: string; label: string }) {
-  return (
-    <View style={s.profileRow}>
-      <Text style={s.profileIcon}>{icon}</Text>
-      <Text style={s.profileLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function GoldDivider() {
-  return <View style={s.goldDivider} />;
-}
-
+// ── Props ─────────────────────────────────────────────────────────────────────
 interface Props {
   visible: boolean;
   onClose: () => void;
   fabX: number; fabY: number; fabSize: number;
   lang: 'EN' | 'ZH';
   config: GofConfig;
+  gofUnlocked: boolean;
+  onUnlock: () => void;
 }
 
-export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, config }: Props) {
-  const [screen,   setScreen]   = useState(1);
+export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, config, gofUnlocked, onUnlock }: Props) {
+  const ZH = lang === 'ZH';
+  const insets = useSafeAreaInsets();
+
+  const [screen,   setScreen]   = useState<'input' | 'chart'>('input');
   const [day,      setDay]      = useState(1);
   const [month,    setMonth]    = useState(1);
   const [year,     setYear]     = useState(1990);
@@ -81,64 +60,101 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
   const [profile,  setProfile]  = useState<GofProfile | null>(null);
   const [numbers,  setNumbers]  = useState<GofNumbers | null>(null);
   const [adLoaded, setAdLoaded] = useState(false);
-  const [loading,  setLoading]  = useState(false);
+  const [sharing,  setSharing]  = useState(false);
+  const [numbersRevealed, setNumbersRevealed] = useState(false);
+  const [showAdPrompt, setShowAdPrompt] = useState(false);
+  const rewardEarned = useRef(false);
 
-  const scaleAnim   = useRef(new Animated.Value(0)).current;
+  const slideAnim   = useRef(new Animated.Value(SH)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const shareCardRef = useRef<ViewShot>(null);
-  const [sharing, setSharing] = useState(false);
 
-  const fabCX = fabX + fabSize / 2;
-  const fabCY = fabY + fabSize / 2;
-  const dX = fabCX - SW / 2;
-  const dY = fabCY - SH / 2;
-  const tX = scaleAnim.interpolate({ inputRange: [0, 1], outputRange: [dX, 0] });
-  const tY = scaleAnim.interpolate({ inputRange: [0, 1], outputRange: [dY, 0] });
-
+  // ── Animate in/out ──
   useEffect(() => {
     if (visible) {
-      setScreen(1); setProfile(null); setNumbers(null);
+      setScreen('input');
+      setProfile(null);
+      setNumbers(null);
+      setNumbersRevealed(false);
+      setShowAdPrompt(false);
       Animated.parallel([
-        Animated.spring(scaleAnim,   { toValue: 1, friction: 7, tension: 60, useNativeDriver: true }),
         Animated.timing(opacityAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(slideAnim,   { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
       ]).start();
     } else {
-      scaleAnim.setValue(0); opacityAnim.setValue(0);
+      Animated.parallel([
+        Animated.timing(opacityAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+        Animated.timing(slideAnim,   { toValue: SH, duration: 200, useNativeDriver: true }),
+      ]).start();
     }
   }, [visible]);
 
+  // ── Ad setup ──
   useEffect(() => {
     const unsubLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => setAdLoaded(true));
     const unsubEarned = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
+      rewardEarned.current = true;
+      onUnlock();
       if (profile) {
         const inputs: GofInputs = { day, month, year, gender, colour };
         setNumbers(generateNumbers(inputs, profile));
-        setScreen(3);
+        setNumbersRevealed(true);
       }
     });
-    const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => { setAdLoaded(false); rewarded.load(); });
-    const unsubError  = rewarded.addAdEventListener(AdEventType.ERROR,  () => setAdLoaded(false));
+    const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
+      setAdLoaded(false);
+      rewarded.load();
+      if (!rewardEarned.current && profile) {
+        onUnlock();
+        const inputs: GofInputs = { day, month, year, gender, colour };
+        setNumbers(generateNumbers(inputs, profile));
+        setNumbersRevealed(true);
+      }
+      rewardEarned.current = false;
+    });
+    const unsubError  = rewarded.addAdEventListener(AdEventType.ERROR, () => {
+      setAdLoaded(false);
+      onUnlock();
+      if (profile) {
+        const inputs: GofInputs = { day, month, year, gender, colour };
+        setNumbers(generateNumbers(inputs, profile));
+        setNumbersRevealed(true);
+      }
+    });
     rewarded.load();
     return () => { unsubLoaded(); unsubEarned(); unsubClosed(); unsubError(); };
   }, [profile, day, month, year, gender, colour]);
 
-  const handleNext = () => {
-    setLoading(true);
+  const handleCast = () => {
     const inputs: GofInputs = { day, month, year, gender, colour };
     const prof = computeProfile(inputs);
     setProfile(prof);
-    setLoading(false);
-    setScreen(2);
+    setScreen('chart');
   };
 
-  const handleWatchAd = () => {
-    if (adLoaded) { rewarded.show(); }
-    else {
-      // No ad available — still reveal numbers
+  const handleCastCTA = () => {
+    if (gofUnlocked) {
+      // Already watched ad this session — go straight to numbers
       if (profile) {
         const inputs: GofInputs = { day, month, year, gender, colour };
         setNumbers(generateNumbers(inputs, profile));
-        setScreen(3);
+        setNumbersRevealed(true);
+      }
+    } else {
+      setShowAdPrompt(true);
+    }
+  };
+
+  const handleWatchAd = () => {
+    setShowAdPrompt(false);
+    if (adLoaded) {
+      rewarded.show();
+    } else {
+      // Graceful fallback if ad not loaded
+      if (profile) {
+        const inputs: GofInputs = { day, month, year, gender, colour };
+        setNumbers(generateNumbers(inputs, profile));
+        setNumbersRevealed(true);
       }
     }
   };
@@ -151,279 +167,340 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
       await RNShare.open({
         url: `file://${uri}`,
         type: 'image/jpeg',
-        message: L ? '财神赐我幸运号码！下载 SG Lottery 也来试试！🎰' : '财神 blessed me with lucky numbers! Try SG Lottery too! 🎰',
+        message: ZH ? '财神赐我幸运号码！下载 SG Lottery 也来试试！🎰' : '财神 blessed me with lucky numbers! Try SG Lottery too! 🎰',
         failOnCancel: false,
       });
     } catch (e) {
       const fourdStr = numbers.fourd.join(' | ');
-      const totoStr  = numbers.toto.map(s => s.join('-')).join(' / ');
+      const totoStr  = numbers.toto.map((s: number[]) => s.join('-')).join(' / ');
       await Share.share({ message: `My GoF lucky numbers 🎰\n4D: ${fourdStr}\nTOTO: ${totoStr}\nGet yours: play.google.com/store/apps/details?id=com.totosg` });
     }
     setSharing(false);
   };
 
-  const handleRate = () => Linking.openURL('https://play.google.com/store/apps/details?id=com.totosg');
+  const handleClose = () => onClose();
 
-  const handleClose = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim,   { toValue: 0, friction: 7, tension: 60, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-    ]).start(() => onClose());
-  };
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
 
-  const L = lang === 'ZH';
-
-  // ── Header (shared across all screens) ────────────────────────────────────
-  const Header = (
-    <View style={s.header}>
-      <TouchableOpacity style={s.closeBtn} onPress={handleClose}>
-        <Text style={s.closeBtnText}>✕</Text>
-      </TouchableOpacity>
-      <Image source={config.icon} style={s.headerIcon} resizeMode="contain" />
-      <GoldDivider />
+  // ── Stepper ──────────────────────────────────────────────────────────────────
+  const Stepper = ({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (v: number) => void }) => (
+    <View style={s.stepperGroup}>
+      <Text style={s.stepperLabel}>{label}</Text>
+      <View style={s.stepperRow}>
+        <TouchableOpacity style={s.stepperBtn} onPress={() => onChange(Math.max(min, value - 1))}>
+          <Text style={s.stepperBtnText}>−</Text>
+        </TouchableOpacity>
+        <Text style={s.stepperVal}>{String(value).padStart(2, '0')}</Text>
+        <TouchableOpacity style={s.stepperBtn} onPress={() => onChange(Math.min(max, value + 1))}>
+          <Text style={s.stepperBtnText}>+</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
-  // ── Screen 1 ───────────────────────────────────────────────────────────────
-  const Screen1 = (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.screenContent}>
-      <Text style={s.screenTitle}>{L ? config.s1TitleZH : config.s1TitleEN}</Text>
-      <Text style={s.screenSubtitle}>{L ? config.s1SubtitleZH : config.s1SubtitleEN}</Text>
-      <GoldDivider />
+  // ── Screen: Input ─────────────────────────────────────────────────────────────
+  const ScreenInput = (
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.screenPad}>
+      {/* Intro */}
+      <Text style={s.introText}>
+        {ZH
+          ? '输入出生日期、能量与灵魂颜色。号码由生肖、五行、卦数、洛书缺数及当前时辰推算。'
+          : 'Enter birth date, energy and soul colour. Numbers are derived from zodiac, five elements, Kua number, Lo Shu gaps and the current Chinese hour.'}
+      </Text>
 
-      {/* Birth date */}
-      <Text style={s.fieldLabel}>🌟 {L ? '出生日期' : 'Date of Birth'}</Text>
-      <View style={s.numRow}>
-        <NumPicker value={day}   min={1}    max={31}   onChange={setDay}   label={L ? '日' : 'Day'} />
-        <NumPicker value={month} min={1}    max={12}   onChange={setMonth} label={L ? '月' : 'Month'} />
-        <NumPicker value={year}  min={1920} max={2010} onChange={setYear}  label={L ? '年' : 'Year'} />
+      {/* Date of birth */}
+      <Text style={s.fieldLabel}>{ZH ? '出生日期' : 'DATE OF BIRTH'}</Text>
+      <View style={s.stepperGroupRow}>
+        <Stepper label={ZH ? '日' : 'DAY'}   value={day}   min={1} max={31}   onChange={setDay} />
+        <Stepper label={ZH ? '月' : 'MONTH'} value={month} min={1} max={12}   onChange={setMonth} />
+        <Stepper label={ZH ? '年' : 'YEAR'}  value={year}  min={1920} max={2010} onChange={setYear} />
       </View>
 
-      {/* Gender */}
-      <Text style={s.fieldLabel}>☯️ {L ? '您的天地能量' : 'Your Cosmic Energy'}</Text>
+      {/* Cosmic energy */}
+      <Text style={s.fieldLabel}>{ZH ? '宇宙能量' : 'COSMIC ENERGY'}</Text>
+      <Text style={s.fieldHint}>{ZH ? '用于计算卦数。' : 'USED FOR THE KUA NUMBER.'}</Text>
       <View style={s.genderRow}>
-        {(['male', 'female'] as Gender[]).map(g => (
-          <TouchableOpacity key={g} style={[s.genderBtn, gender === g && s.genderBtnActive]} onPress={() => setGender(g)}>
-            <Text style={[s.genderBtnText, gender === g && s.genderBtnTextActive]}>
-              {g === 'male' ? (L ? '阳 Yang ☯' : 'Yang ☯') : (L ? '阴 Yin ☯' : 'Yin ☯')}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <TouchableOpacity
+          style={[s.genderBtn, gender === 'male' && s.genderBtnActive]}
+          onPress={() => setGender('male')}
+        >
+          <Text style={[s.genderBtnText, gender === 'male' && s.genderBtnTextActive]}>
+            {ZH ? '阳 · 男' : 'YANG · MALE'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.genderBtn, gender === 'female' && s.genderBtnActive]}
+          onPress={() => setGender('female')}
+        >
+          <Text style={[s.genderBtnText, gender === 'female' && s.genderBtnTextActive]}>
+            {ZH ? '阴 · 女' : 'YIN · FEMALE'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Colour */}
-      <Text style={s.fieldLabel}>🎨 {L ? '最认同的颜色' : 'Colour You Identify With'}</Text>
+      {/* Soul colour */}
+      <Text style={s.fieldLabel}>{ZH ? '灵魂颜色' : 'COLOUR YOU IDENTIFY WITH'}</Text>
       <View style={s.colourRow}>
         {COLOURS.map(c => (
-          <TouchableOpacity key={c.key} style={[s.colourBtn, colour === c.key && { borderColor: c.hex, borderWidth: 2.5 }]} onPress={() => setColour(c.key)}>
-            <View style={[s.colourDot, { backgroundColor: c.hex }]} />
-            <Text style={s.colourLabel}>{L ? c.labelZH : c.label}</Text>
+          <TouchableOpacity
+            key={c.key}
+            style={[s.colourBtn, colour === c.key && s.colourBtnActive]}
+            onPress={() => setColour(c.key)}
+          >
+            <View style={[s.colourSwatch, { backgroundColor: c.hex }]} />
+            <Text style={s.colourLabel}>{ZH ? c.labelZH : c.labelEN}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <TouchableOpacity style={s.goldBtn} onPress={handleNext} disabled={loading}>
-        {loading ? <ActivityIndicator color={DARK} /> :
-          <Text style={s.goldBtnText}>{L ? '查看我的天命 ✨' : 'Read My Destiny ✨'}</Text>}
+      {/* CTA */}
+      <TouchableOpacity style={s.redBtn} onPress={handleCast}>
+        <Text style={s.redBtnText}>{ZH ? '铸造今日号码' : 'CAST TODAY\'S NUMBERS'}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 
-  // ── Screen 2 ───────────────────────────────────────────────────────────────
-  const Screen2 = profile ? (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.screenContent}>
-      <Text style={s.screenTitle}>{L ? config.s2TitleZH : config.s2TitleEN}</Text>
-      <GoldDivider />
-
-      <View style={s.profileCard}>
-        <ProfileRow icon="🐉" label={L ? profile.zodiacZH : profile.zodiac} />
-        <ProfileRow icon="✨" label={`${L ? '五行：' : 'Element: '}${L ? profile.elementZH : profile.element}`} />
-        <ProfileRow icon="☯️" label={`${L ? '九宫数：' : 'Kua: '}${profile.kuaNumber} — ${L ? profile.kuaElementZH : profile.kuaElement}`} />
-        <ProfileRow icon="🕐" label={L ? profile.chineseHourZH : profile.chineseHour} />
-        <ProfileRow icon="🎨" label={`${L ? '灵魂色彩：' : 'Soul: '}${L ? profile.colourElementZH : profile.colourElement}`} />
-        {profile.loShuMissing.length > 0 && (
-          <ProfileRow icon="🔮" label={`${L ? '洛书缺：' : 'Lo Shu: '}${profile.loShuMissing.join(' · ')}`} />
-        )}
+  // ── Screen: Chart ─────────────────────────────────────────────────────────────
+  const ScreenChart = profile ? (
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.screenPad}>
+      {/* Seed banner */}
+      <View style={s.seedBanner}>
+        <Text style={s.seedText}>
+          {ZH
+            ? `生成于 ${dateStr} · 相同输入在午夜前返回相同号码。`
+            : `SEEDED ${dateStr} · SAME INPUTS RETURN THESE NUMBERS UNTIL MIDNIGHT.`}
+        </Text>
       </View>
 
-      <Text style={s.adMsg}>{L ? config.s2AdMsgZH : config.s2AdMsgEN}</Text>
-
-      <TouchableOpacity style={s.goldBtn} onPress={handleWatchAd}>
-        <Text style={s.goldBtnText}>{L ? config.s2CtaZH : config.s2CtaEN}</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  ) : null;
-
-  // ── Screen 3 ───────────────────────────────────────────────────────────────
-  const Screen3 = numbers ? (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.screenContent}>
-      <Text style={s.screenTitle}>{L ? config.s3TitleZH : config.s3TitleEN}</Text>
-      <Text style={s.flavourText}>{L ? config.s3FlavourZH : config.s3FlavourEN}</Text>
-      <GoldDivider />
-
-      {/* 4D */}
-      <Text style={s.numSectionLabel}>🎴 {L ? '4D 号码' : '4D Numbers'}</Text>
-      <View style={s.fourdRow}>
-        {numbers.fourd.map((n, i) => (
-          <View key={i} style={s.fourdBall}>
-            <Text style={s.fourdBallText}>{n}</Text>
+      {/* Your chart */}
+      <Text style={s.fieldLabel}>{ZH ? '你的命盘' : 'YOUR CHART'}</Text>
+      <View style={s.chartTable}>
+        {[
+          { label: ZH ? '生肖' : 'ZODIAC',        value: ZH ? profile.zodiacZH      : profile.zodiac      },
+          { label: ZH ? '年份五行' : 'YEAR ELEMENT', value: ZH ? profile.elementZH     : profile.element     },
+          { label: ZH ? '卦数' : 'KUA NUMBER',     value: `${profile.kuaNumber} · ${ZH ? profile.kuaElementZH : profile.kuaElement}` },
+          { label: ZH ? '洛书缺数' : 'LO SHU GAPS', value: profile.loShuMissing?.length ? profile.loShuMissing.join(' ') : '—' },
+          { label: ZH ? '灵魂元素' : 'SOUL ELEMENT', value: ZH ? profile.colourElementZH : profile.colourElement },
+          { label: ZH ? '当前时辰' : 'HOUR NOW',    value: ZH ? profile.chineseHourZH  : profile.chineseHour  },
+        ].map((row, i) => (
+          <View key={i} style={[s.chartRow, i === 0 && s.chartRowFirst]}>
+            <Text style={s.chartRowLabel}>{row.label}</Text>
+            <Text style={s.chartRowValue}>{row.value || '—'}</Text>
           </View>
         ))}
       </View>
 
-      <GoldDivider />
-
-      {/* TOTO */}
-      <Text style={s.numSectionLabel}>🎱 {L ? 'TOTO 号码' : 'TOTO Numbers'}</Text>
-      {numbers.toto.map((set, i) => (
-        <View key={i} style={s.totoRow}>
-          {set.map((n, j) => (
-            <View key={j} style={s.totoBall}>
-              <Text style={s.totoBallText}>{n}</Text>
+      {/* Numbers — revealed after ad */}
+      {!numbersRevealed ? (
+        <>
+          <Text style={s.adMsg}>{ZH ? config.s2AdMsgZH : config.s2AdMsgEN}</Text>
+          <TouchableOpacity style={s.redBtn} onPress={handleCastCTA}>
+            <Text style={s.redBtnText}>{ZH ? config.s2CtaZH : config.s2CtaEN}</Text>
+          </TouchableOpacity>
+        </>
+      ) : numbers ? (
+        <>
+          {/* 4D · Three sets */}
+          <Text style={s.numSectionLabel}>
+            {ZH ? '4D · 三组号码' : '4D · THREE SETS'}
+            <Text style={s.numSectionSub}>{ZH ? '         按元素加权' : '         WEIGHTED BY ELEMENT'}</Text>
+          </Text>
+          {numbers.fourd.map((n: string, i: number) => (
+            <View key={i} style={s.fourdCard}>
+              <Text style={s.fourdCardIndex}>{String(i + 1).padStart(2, '0')}</Text>
+              <View style={s.fourdCardDivider} />
+              <Text style={s.fourdCardNum}>{n}</Text>
             </View>
           ))}
-        </View>
-      ))}
 
-      <TouchableOpacity style={s.goldBtn} onPress={handleShare} disabled={sharing}>
-        {sharing ? <ActivityIndicator color={DARK} /> :
-          <Text style={s.goldBtnText}>{L ? config.s3ShareZH : config.s3ShareEN}</Text>}
-      </TouchableOpacity>
-      <TouchableOpacity style={s.outlineBtn} onPress={handleRate}>
-        <Text style={s.outlineBtnText}>{L ? config.s3RateZH : config.s3RateEN}</Text>
-      </TouchableOpacity>
+          {/* TOTO · Two sets */}
+          <Text style={[s.numSectionLabel, { marginTop: 16 }]}>
+            {ZH ? 'TOTO · 两组号码' : 'TOTO · TWO SETS'}
+          </Text>
+          {numbers.toto.map((set: number[], si: number) => (
+            <View key={si} style={s.totoRow}>
+              {set.map((n: number, ni: number) => (
+                <View key={ni} style={s.totoCell}>
+                  <Text style={s.totoCellNum}>{String(n).padStart(2, '0')}</Text>
+                </View>
+              ))}
+            </View>
+          ))}
+
+          {/* Honesty disclaimer */}
+          <Text style={s.disclaimer}>
+            {ZH
+              ? '形而上学，不是数学。这些号码与其他号码中奖机会相同。玩得开心。'
+              : 'Metaphysics, not mathematics. These numbers carry exactly the same odds as any others. Play what makes the draw fun.'}
+          </Text>
+
+          {/* EDIT / SHARE */}
+          <View style={s.actionRow}>
+            <TouchableOpacity style={s.outlineBtn} onPress={() => { setScreen('input'); setNumbersRevealed(false); }}>
+              <Text style={s.outlineBtnText}>{ZH ? '编辑' : 'EDIT'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.redBtnHalf} onPress={handleShare} disabled={sharing}>
+              {sharing
+                ? <ActivityIndicator color={PAPER} />
+                : <Text style={s.redBtnText}>{ZH ? '分享' : 'SHARE'}</Text>}
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : null}
     </ScrollView>
   ) : null;
 
+  // ── Modal shell ───────────────────────────────────────────────────────────────
   return (
     <>
-      <Modal visible={visible} transparent statusBarTranslucent onRequestClose={handleClose}>
+      <Modal visible={visible} transparent statusBarTranslucent animationType="none" onRequestClose={handleClose}>
         <Animated.View style={[s.overlay, { opacity: opacityAnim }]}>
-          <Animated.View style={[
-            s.card,
-            { transform: [{ scale: scaleAnim }, { translateX: tX }, { translateY: tY }] },
-          ]}>
-            {Header}
+          <Animated.View style={[s.sheet, { transform: [{ translateY: slideAnim }], height: SH * 0.90 - insets.bottom, paddingBottom: insets.bottom }]}>
+
+            {/* Red header */}
+            <View style={s.sheetHeader}>
+              <View>
+                <Text style={s.sheetTitle}>{ZH ? '财神' : 'GOD OF FORTUNE'}</Text>
+                <Text style={s.sheetSub}>{ZH ? '财神 · 数字占卜' : 'CAISHEN · NUMBER DIVINATION'}</Text>
+              </View>
+              <TouchableOpacity style={s.closeBtn} onPress={handleClose}>
+                <Text style={s.closeBtnText}>{ZH ? '关闭' : 'CLOSE'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Screen content */}
             <View style={s.screenContainer}>
-              {screen === 1 && Screen1}
-              {screen === 2 && Screen2}
-              {screen === 3 && Screen3}
+              {screen === 'input' && ScreenInput}
+              {screen === 'chart' && ScreenChart}
             </View>
           </Animated.View>
         </Animated.View>
 
-        {/* Hidden share card inside Modal so Android renders it */}
+        {/* Hidden share card */}
         {numbers && (
           <ViewShot ref={shareCardRef} style={s.hiddenCard} options={{ format: 'jpg', quality: 0.95 }}>
             <GofShareCard
               numbers={numbers}
               config={config}
               lang={lang}
-              flavourText={L ? config.s3FlavourZH : config.s3FlavourEN}
+              flavourText={ZH ? config.s3FlavourZH : config.s3FlavourEN}
+              profile={profile ?? undefined}
             />
           </ViewShot>
         )}
+
+        {/* Ad prompt — no skip, mandatory */}
+        <Modal visible={showAdPrompt} transparent animationType="fade">
+          <View style={s.adPromptOverlay}>
+            <View style={s.adPromptBox}>
+              <Text style={s.adPromptTitle}>{ZH ? '财神需要供奉！' : 'MAKE YOUR OFFERING'}</Text>
+              <Text style={s.adPromptBody}>
+                {ZH ? config.s2AdMsgZH : config.s2AdMsgEN}
+              </Text>
+              <TouchableOpacity style={s.adPromptBtn} onPress={handleWatchAd}>
+                <Text style={s.adPromptBtnText}>{ZH ? '上香 🧧' : 'WATCH AD 🧧'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </Modal>
     </>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  card: {
-    backgroundColor: DARK,
-    borderRadius: 28,
-    width: '100%',
-    height: CARD_H,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: GOLD + '40',
-  },
+  overlay:  { flex: 1, backgroundColor: 'rgba(26,26,26,0.5)', justifyContent: 'flex-end' },
+  sheet:    { backgroundColor: PAPER, height: SH * 0.90, borderTopWidth: 3, borderColor: RED },
 
-  // ── Header ──────────────────────────────────────────────────────────────────
-  header: {
-    alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 8,
-    backgroundColor: DARK,
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeBtnText: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600' },
-  headerIcon:   { width: 80, height: 80, marginBottom: 8 },
-  steps: { flexDirection: 'row', gap: 6, marginBottom: 12 },
-  step:  { width: 32, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)' },
-  stepActive: { backgroundColor: GOLD },
-  goldDivider: { height: 1, backgroundColor: GOLD + '30', width: '100%', marginVertical: 10 },
+  // Header
+  sheetHeader:  { backgroundColor: RED, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
+  sheetTitle:   { fontFamily: 'ArchivoNarrow-Bold', fontSize: 20, color: PAPER, letterSpacing: 0.5 },
+  sheetSub:     { fontFamily: 'IBMPlexMono-Medium', fontSize: 9, color: 'rgba(255,255,255,0.75)', letterSpacing: 2, marginTop: 3 },
+  closeBtn:     { borderWidth: 1, borderColor: 'rgba(255,255,255,0.7)', paddingHorizontal: 9, paddingVertical: 5 },
+  closeBtnText: { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 11, color: PAPER, letterSpacing: 1 },
 
-  // ── Screen container ────────────────────────────────────────────────────────
   screenContainer: { flex: 1 },
-  screenContent: { padding: 20, paddingTop: 4, paddingBottom: 24 },
+  screenPad:       { padding: 16, paddingBottom: 32 },
 
-  screenTitle:    { fontSize: 18, fontWeight: '700', color: GOLD2, textAlign: 'center', marginBottom: 4 },
-  screenSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginBottom: 8, lineHeight: 18 },
+  // Intro
+  introText: { fontFamily: 'IBMPlexMono-Regular', fontSize: 11, color: MUTE, lineHeight: 18, marginBottom: 16 },
 
-  // ── Fields ──────────────────────────────────────────────────────────────────
-  fieldLabel: { fontSize: 12, color: GOLD, fontWeight: '600', marginBottom: 8, marginTop: 4 },
+  // Field labels
+  fieldLabel: { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 9, color: INK, letterSpacing: 2, marginBottom: 8, marginTop: 4 },
+  fieldHint:  { fontFamily: 'IBMPlexMono-Regular', fontSize: 9, color: FAINT, letterSpacing: 1, marginBottom: 8, marginTop: -4 },
 
-  numRow:   { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  numGroup: { flex: 1, alignItems: 'center' },
-  numLabel: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4 },
-  numPicker:{ flexDirection: 'row', alignItems: 'center', backgroundColor: CARD, borderRadius: 10, borderWidth: 1, borderColor: GOLD + '30' },
-  numBtn:   { paddingHorizontal: 8, paddingVertical: 8 },
-  numBtnText:{ fontSize: 16, color: GOLD, fontWeight: '600' },
-  numVal:   { fontSize: 13, fontWeight: '700', color: '#fff', minWidth: 26, textAlign: 'center' },
+  // Steppers
+  stepperGroupRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  stepperGroup:    { flex: 1, alignItems: 'center' },
+  stepperLabel:    { fontFamily: 'IBMPlexMono-Medium', fontSize: 9, color: FAINT, letterSpacing: 1, marginBottom: 6 },
+  stepperRow:      { flexDirection: 'row', borderWidth: 1, borderColor: RED, width: '100%' },
+  stepperBtn:      { paddingHorizontal: 8, paddingVertical: 9, alignItems: 'center', justifyContent: 'center', borderRightWidth: 1, borderColor: RULE },
+  stepperBtnText:  { fontFamily: 'IBMPlexMono-Bold', fontSize: 14, color: RED },
+  stepperVal:      { flex: 1, fontFamily: 'IBMPlexMono-SemiBold', fontSize: 13, color: INK, textAlign: 'center', paddingVertical: 9 },
 
-  genderRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  genderBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', backgroundColor: CARD },
-  genderBtnActive: { borderColor: GOLD, backgroundColor: GOLD + '20' },
-  genderBtnText: { fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
-  genderBtnTextActive: { color: GOLD, fontWeight: '700' },
+  // Gender
+  genderRow:          { flexDirection: 'row', gap: 0, marginBottom: 16 },
+  genderBtn:          { flex: 1, paddingVertical: 12, borderWidth: 1, borderColor: RULE, alignItems: 'center' },
+  genderBtnActive:    { backgroundColor: RED, borderColor: RED },
+  genderBtnText:      { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 11, color: MUTE, letterSpacing: 1 },
+  genderBtnTextActive:{ color: PAPER },
 
-  colourRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  colourBtn: { flex: 1, alignItems: 'center', paddingVertical: 8, marginHorizontal: 3, borderRadius: 10, borderWidth: 1.5, borderColor: 'transparent', backgroundColor: CARD },
-  colourDot: { width: 22, height: 22, borderRadius: 11, marginBottom: 4 },
-  colourLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)' },
+  // Colours
+  colourRow:      { flexDirection: 'row', gap: 4, marginBottom: 16 },
+  colourBtn:      { flex: 1, alignItems: 'center', paddingVertical: 8, borderWidth: 1, borderColor: RULE },
+  colourBtnActive:{ borderColor: RED, borderWidth: 2 },
+  colourSwatch:   { width: 28, height: 28, marginBottom: 4 },
+  colourLabel:    { fontFamily: 'IBMPlexMono-Medium', fontSize: 9, color: MUTE, letterSpacing: 0.5 },
 
-  // ── Profile card ────────────────────────────────────────────────────────────
-  profileCard: { backgroundColor: CARD, borderRadius: 16, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: GOLD + '25' },
-  profileRow:  { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)' },
-  profileIcon: { fontSize: 16, marginRight: 10, width: 24 },
-  profileLabel:{ flex: 1, color: 'rgba(255,255,255,0.85)', fontSize: 12, lineHeight: 17 },
+  // Buttons
+  redBtn:      { backgroundColor: RED, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
+  redBtnHalf:  { flex: 1, backgroundColor: RED, paddingVertical: 14, alignItems: 'center' },
+  redBtnText:  { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 11, color: PAPER, letterSpacing: 2 },
+  outlineBtn:  { flex: 1, borderWidth: 1, borderColor: INK, paddingVertical: 14, alignItems: 'center' },
+  outlineBtnText:{ fontFamily: 'IBMPlexMono-SemiBold', fontSize: 11, color: INK, letterSpacing: 2 },
+  actionRow:   { flexDirection: 'row', gap: 0, marginTop: 16 },
 
-  adMsg: { fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 12, lineHeight: 18, fontStyle: 'italic' },
+  // Seed banner
+  seedBanner: { backgroundColor: TINT, padding: 10, marginBottom: 14, borderWidth: 1, borderColor: RULE },
+  seedText:   { fontFamily: 'IBMPlexMono-Regular', fontSize: 9, color: MUTE, letterSpacing: 0.5, lineHeight: 15 },
 
-  // ── Numbers ─────────────────────────────────────────────────────────────────
-  flavourText: { fontSize: 12, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 20, marginBottom: 8 },
-  numSectionLabel: { fontSize: 13, fontWeight: '600', color: GOLD, textAlign: 'center', marginBottom: 10 },
+  // Chart table
+  chartTable:    { borderTopWidth: 1, borderColor: RULE, marginBottom: 16 },
+  chartRow:      { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderColor: RULE },
+  chartRowFirst: {},
+  chartRowLabel: { fontFamily: 'IBMPlexMono-Medium', fontSize: 10, color: FAINT, letterSpacing: 1 },
+  chartRowValue: { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 13, color: INK },
 
-  fourdRow:    { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 8 },
-  fourdBall:   { backgroundColor: GOLD + '25', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: GOLD + '60' },
-  fourdBallText:{ color: GOLD2, fontSize: 20, fontWeight: '700', letterSpacing: 2 },
+  // Ad message
+  adMsg: { fontFamily: 'IBMPlexMono-Regular', fontSize: 10, color: MUTE, textAlign: 'center', marginBottom: 12, lineHeight: 16 },
 
-  totoRow:     { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 6 },
-  totoBall:    { width: 38, height: 38, borderRadius: 19, backgroundColor: GOLD + '25', borderWidth: 1.5, borderColor: GOLD + '70', justifyContent: 'center', alignItems: 'center' },
-  totoBallText:{ color: GOLD2, fontSize: 12, fontWeight: '700' },
+  // Numbers
+  numSectionLabel: { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 10, color: RED, letterSpacing: 2, marginBottom: 10 },
+  numSectionSub:   { fontFamily: 'IBMPlexMono-Regular', fontSize: 9, color: FAINT, letterSpacing: 1 },
 
-  // ── Buttons ─────────────────────────────────────────────────────────────────
-  goldBtn:     { backgroundColor: GOLD, borderRadius: 14, paddingVertical: 14, width: '100%', alignItems: 'center', marginTop: 12 },
-  goldBtnText: { color: DARK, fontSize: 15, fontWeight: '800' },
-  outlineBtn:  { borderWidth: 1, borderColor: GOLD + '50', borderRadius: 14, paddingVertical: 12, width: '100%', alignItems: 'center', marginTop: 8 },
-  outlineBtnText:{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '500' },
-  hiddenCard:    { position: 'absolute', left: -9999, top: -9999 },
+  // 4D cards
+  fourdCard:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: RED, backgroundColor: TINT, marginBottom: 6, paddingVertical: 0 },
+  fourdCardIndex:   { fontFamily: 'IBMPlexMono-Medium', fontSize: 11, color: MUTE, paddingHorizontal: 12, paddingVertical: 16 },
+  fourdCardDivider: { width: 1, backgroundColor: RED, alignSelf: 'stretch' },
+  fourdCardNum:     { flex: 1, fontFamily: 'IBMPlexMono-Bold', fontSize: 36, color: INK, textAlign: 'center', paddingVertical: 10, letterSpacing: 2 },
+
+  // TOTO grid
+  totoRow:    { flexDirection: 'row', gap: 5, marginBottom: 5 },
+  totoCell:   { flex: 1, borderWidth: 1, borderColor: RED, paddingVertical: 10, alignItems: 'center' },
+  totoCellNum:{ fontFamily: 'IBMPlexMono-SemiBold', fontSize: 14, color: INK },
+
+  // Disclaimer
+  disclaimer: { fontFamily: 'IBMPlexMono-Regular', fontSize: 9, color: FAINT, lineHeight: 15, marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderColor: RULE },
+
+  hiddenCard: { position: 'absolute', left: -9999, top: -9999 },
+
+  // Ad prompt (mandatory, no skip)
+  adPromptOverlay: { flex: 1, backgroundColor: 'rgba(26,26,26,0.7)', justifyContent: 'center', alignItems: 'center', padding: 32 },
+  adPromptBox:     { backgroundColor: PAPER, borderTopWidth: 3, borderColor: RED, padding: 24, width: '100%' },
+  adPromptTitle:   { fontFamily: 'IBMPlexMono-Bold', fontSize: 13, color: INK, letterSpacing: 2, marginBottom: 10 },
+  adPromptBody:    { fontFamily: 'IBMPlexMono-Regular', fontSize: 11, color: MUTE, lineHeight: 18, marginBottom: 20 },
+  adPromptBtn:     { backgroundColor: RED, paddingVertical: 14, alignItems: 'center' },
+  adPromptBtnText: { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 12, color: PAPER, letterSpacing: 2 },
 });

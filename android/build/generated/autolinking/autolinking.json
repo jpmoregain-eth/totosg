@@ -28,6 +28,65 @@
         }
       }
     },
+    "@react-native-firebase/app": {
+      "root": "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/app",
+      "name": "@react-native-firebase/app",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/app/RNFBApp.podspec",
+          "version": "26.3.2",
+          "configurations": [],
+          "scriptPhases": [
+            {
+              "name": "[RNFB] Core Configuration",
+              "path": "./ios_config.sh",
+              "execution_position": "after_compile",
+              "input_files": [
+                "$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)"
+              ]
+            }
+          ]
+        },
+        "android": {
+          "sourceDir": "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/app/android",
+          "packageImportPath": "import io.invertase.firebase.app.ReactNativeFirebaseAppPackage;",
+          "packageInstance": "new ReactNativeFirebaseAppPackage()",
+          "buildTypes": [],
+          "libraryName": "RNFBAppTurboModules",
+          "componentDescriptors": [],
+          "cmakeListsPath": "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/app/android/src/reactnative/java/io/invertase/firebase/app/generated/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
+    "@react-native-firebase/messaging": {
+      "root": "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/messaging",
+      "name": "@react-native-firebase/messaging",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/messaging/RNFBMessaging.podspec",
+          "version": "26.3.2",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/messaging/android",
+          "packageImportPath": "import io.invertase.firebase.messaging.ReactNativeFirebaseMessagingPackage;",
+          "packageInstance": "new ReactNativeFirebaseMessagingPackage()",
+          "buildTypes": [],
+          "libraryName": "RNFBMessagingTurboModules",
+          "componentDescriptors": [],
+          "cmakeListsPath": "/home/ubuntu/TotoSG/node_modules/@react-native-firebase/messaging/android/src/main/java/io/invertase/firebase/messaging/generated/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
     "react-native-google-mobile-ads": {
       "root": "/home/ubuntu/TotoSG/node_modules/react-native-google-mobile-ads",
       "name": "react-native-google-mobile-ads",
@@ -670,7 +729,9 @@
     "ios": {},
     "android": {}
   },
-  "assets": [],
+  "assets": [
+    "./src/assets/fonts"
+  ],
   "project": {
     "ios": {
       "sourceDir": "/home/ubuntu/TotoSG/ios",
