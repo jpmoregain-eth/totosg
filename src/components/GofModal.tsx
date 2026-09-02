@@ -6,7 +6,8 @@ import {
 } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 import RNShare from 'react-native-share';
-import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { TestIds } from 'react-native-google-mobile-ads';
+import { useRewardedAd } from '../lib/rewardedAds';
 import { GofConfig } from '../lib/gofConfig';
 import { GofInputs, GofProfile, GofNumbers, computeProfile, generateNumbers, SoulColour, Gender } from '../lib/gofEngine';
 import GofShareCard from './GofShareCard';
@@ -21,7 +22,6 @@ const GOLD2   = '#F0D080';
 const CARD_H  = SH * 0.82;
 
 const GOF_REWARDED_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/3044234765';
-const rewarded = RewardedAd.createForAdRequest(GOF_REWARDED_ID, { requestNonPersonalizedAdsOnly: true });
 
 const COLOURS: { key: SoulColour; hex: string; label: string; labelZH: string }[] = [
   { key: 'red',    hex: '#E24B4A', label: 'Red',    labelZH: '红' },
@@ -80,7 +80,8 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
   const [colour,   setColour]   = useState<SoulColour>('red');
   const [profile,  setProfile]  = useState<GofProfile | null>(null);
   const [numbers,  setNumbers]  = useState<GofNumbers | null>(null);
-  const [adLoaded, setAdLoaded] = useState(false);
+  // Ad is only requested once the modal is actually open.
+  const { show: showAd } = useRewardedAd(GOF_REWARDED_ID, visible);
   const [loading,  setLoading]  = useState(false);
 
   const scaleAnim   = useRef(new Animated.Value(0)).current;
@@ -107,21 +108,6 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
     }
   }, [visible]);
 
-  useEffect(() => {
-    const unsubLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => setAdLoaded(true));
-    const unsubEarned = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
-      if (profile) {
-        const inputs: GofInputs = { day, month, year, gender, colour };
-        setNumbers(generateNumbers(inputs, profile));
-        setScreen(3);
-      }
-    });
-    const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => { setAdLoaded(false); rewarded.load(); });
-    const unsubError  = rewarded.addAdEventListener(AdEventType.ERROR,  () => setAdLoaded(false));
-    rewarded.load();
-    return () => { unsubLoaded(); unsubEarned(); unsubClosed(); unsubError(); };
-  }, [profile, day, month, year, gender, colour]);
-
   const handleNext = () => {
     setLoading(true);
     const inputs: GofInputs = { day, month, year, gender, colour };
@@ -131,16 +117,16 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
     setScreen(2);
   };
 
+  const reveal = () => {
+    if (!profile) return;
+    const inputs: GofInputs = { day, month, year, gender, colour };
+    setNumbers(generateNumbers(inputs, profile));
+    setScreen(3);
+  };
+
   const handleWatchAd = () => {
-    if (adLoaded) { rewarded.show(); }
-    else {
-      // No ad available — still reveal numbers
-      if (profile) {
-        const inputs: GofInputs = { day, month, year, gender, colour };
-        setNumbers(generateNumbers(inputs, profile));
-        setScreen(3);
-      }
-    }
+    // No ad ready (or it expired) — still reveal the numbers.
+    if (!showAd({ onReward: reveal })) reveal();
   };
 
   const handleShare = async () => {

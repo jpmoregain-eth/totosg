@@ -4,7 +4,8 @@ import {
   ScrollView, Animated, Dimensions, ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { TestIds } from 'react-native-google-mobile-ads';
+import { useRewardedAd } from '../lib/rewardedAds';
 import ViewShot from 'react-native-view-shot';
 import RNShare from 'react-native-share';
 import { supabase } from '../lib/supabase';
@@ -23,8 +24,6 @@ const SIFU_AD_ID = __DEV__
   : 'ca-app-pub-6984775309510247/8566385106';
 
 const EXPLAINER_SEEN_KEY = 'sifu_explainer_seen';
-
-const rewarded = RewardedAd.createForAdRequest(SIFU_AD_ID, { requestNonPersonalizedAdsOnly: true });
 
 // ── TOTO ticket types ─────────────────────────────────────────────────────────
 const TOTO_TICKETS = [
@@ -213,7 +212,8 @@ export default function SifuModal({ visible, onClose, lang, sifuUnlocked, onUnlo
   const [jackpot, setJackpot] = useState(0);
   const [jackpotLabel, setJackpotLabel] = useState('...');
   const [result, setResult]   = useState<ReturnType<typeof calcTotoScore> | null>(null);
-  const [adLoaded, setAdLoaded] = useState(false);
+  // Ad is only requested once the modal is actually open.
+  const { show: showAd } = useRewardedAd(SIFU_AD_ID, visible);
   const [sharing, setSharing] = useState(false);
   // 4D state
   const [fourdRows, setFourdRows] = useState<FourdRow[]>([{ id: 1, bigAmt: 1, smallAmt: 0, betType: 'ordinary', perms: 24, qty: 1 }]);
@@ -255,18 +255,6 @@ export default function SifuModal({ visible, onClose, lang, sifuUnlocked, onUnlo
     }
   };
 
-  // ── Rewarded ad ──
-  useEffect(() => {
-    const unsubLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => setAdLoaded(true));
-    const unsubEarned = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
-      onUnlock(); showResults();
-    });
-    const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => { setAdLoaded(false); rewarded.load(); });
-    const unsubError  = rewarded.addAdEventListener(AdEventType.ERROR,  () => setAdLoaded(false));
-    rewarded.load();
-    return () => { unsubLoaded(); unsubEarned(); unsubClosed(); unsubError(); };
-  }, [tickets, jackpot]);
-
   const setQty = (key: string, qty: number) => setTickets(prev => ({ ...prev, [key]: Math.max(0, qty) }));
   const totalSelected = Object.values(tickets).reduce((a, b) => a + b, 0);
   const fourdHasInput = fourdRows.some(r => (r.bigAmt + r.smallAmt) > 0 && r.qty > 0);
@@ -297,8 +285,9 @@ export default function SifuModal({ visible, onClose, lang, sifuUnlocked, onUnlo
   };
 
   const handleWatchAd = () => {
-    if (adLoaded) rewarded.show();
-    else { onUnlock(); showResults(); } // graceful fallback
+    const unlock = () => { onUnlock(); showResults(); };
+    // No ad ready (or it expired) — unlock anyway.
+    if (!showAd({ onReward: unlock })) unlock();
   };
 
   const handleShare = async () => {

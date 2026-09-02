@@ -4,7 +4,9 @@ import {
   TouchableOpacity, ActivityIndicator, Modal,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { TestIds } from 'react-native-google-mobile-ads';
+import { useIsFocused } from '@react-navigation/native';
+import { useRewardedAd } from '../lib/rewardedAds';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLang } from '../lib/LangContext';
 import { tr } from '../lib/i18n';
@@ -15,8 +17,6 @@ const BLUE = '#185FA5';
 const PURPLE = '#534AB7';
 
 const REWARDED_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/6047752765';
-
-const rewarded = RewardedAd.createForAdRequest(REWARDED_ID, { requestNonPersonalizedAdsOnly: true });
 
 const STRATEGIES = ['Frequency', 'Mean Reversion', 'Positional Bias', 'Sum Range', 'Odd/Even', 'Cold Numbers'];
 const TEMPS = ['Hottest', 'Coldest', 'Balanced'];
@@ -114,7 +114,9 @@ export default function FourdGeneratorScreen() {
   const [sets, setSets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [adLoaded, setAdLoaded] = useState(false);
+  const isFocused = useIsFocused();
+  // Ads are only requested while this tab is on screen, never on app start.
+  const { show: showAd } = useRewardedAd(REWARDED_ID, isFocused);
   const [showPrompt, setShowPrompt] = useState(false);
   const doGenerateRef = React.useRef(null);
 
@@ -128,16 +130,6 @@ export default function FourdGeneratorScreen() {
       setAllDraws(results); setLoading(false);
     };
     fetchData();
-    const unsubLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => setAdLoaded(true));
-    const unsubEarned = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {});
-    const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
-      setAdLoaded(false); rewarded.load(); doGenerateRef.current();
-    });
-    const unsubError = rewarded.addAdEventListener(AdEventType.ERROR, () => {
-      setAdLoaded(false); doGenerateRef.current();
-    });
-    rewarded.load();
-    return () => { unsubLoaded(); unsubEarned(); unsubClosed(); unsubError(); };
   }, []);
 
   const doGenerate = React.useCallback(() => {
@@ -160,7 +152,8 @@ export default function FourdGeneratorScreen() {
   };
 
   const handleWatchAd = () => {
-    if (adLoaded) { rewarded.show(); } else { doGenerate(); }
+    const shown = showAd({ onClosed: () => doGenerateRef.current() });
+    if (!shown) doGenerate();
   };
 
   const handleSkip = () => { doGenerate(); };
