@@ -114,8 +114,6 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
     setShowAdPrompt(false);
     if (!showAd({ onReward: reveal })) reveal();
   };
-    }
-  };
 
   const handleShare = async () => {
     if (!numbers || !shareCardRef.current) return;

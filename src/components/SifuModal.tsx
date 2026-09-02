@@ -159,11 +159,7 @@ export default function SifuModal({ visible, onClose, lang, sifuUnlocked, onUnlo
   const [sharing, setSharing] = useState(false);
   // 4D state
   const [fourdRows, setFourdRows] = useState<FourdRow[]>([{ id: 1, bigAmt: 1, smallAmt: 0, betType: 'ordinary', perms: 24, qty: 1 }]);
-  const [result,    setResult]   = useState<ReturnType<typeof calcTotoScore> | null>(null);
   const [fourdResult, setFourdResult] = useState<ReturnType<typeof calcFourdScore> | null>(null);
-  const [adLoaded,  setAdLoaded] = useState(false);
-  const [sharing,   setSharing]  = useState(false);
-  const rewardEarned = useRef(false);
   const nextRowId = useRef(2);
   const shareCardRef = useRef<ViewShot>(null);
 
@@ -221,6 +217,8 @@ export default function SifuModal({ visible, onClose, lang, sifuUnlocked, onUnlo
     // No ad ready (or it expired) — unlock anyway.
     if (!showAd({ onReward: unlock })) unlock();
   };
+
+  const handleClose = () => onClose();
 
   const handleShare = async () => {
     if (!shareCardRef.current) return;
