@@ -2,15 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, Image, Modal, StyleSheet, ScrollView,
   TouchableOpacity, Animated, Dimensions,
-  Share, ActivityIndicator, Platform,
+  Share, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
 import RNShare from 'react-native-share';
-import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-native-google-mobile-ads';
 import { GofConfig } from '../lib/gofConfig';
 import { GofInputs, GofProfile, GofNumbers, computeProfile, generateNumbers, SoulColour, Gender } from '../lib/gofEngine';
 import GofShareCard from './GofShareCard';
+import { useRewardedAd } from '../lib/rewardedAds';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const RED   = '#ED2939';
@@ -25,8 +25,7 @@ const GOLD  = '#C9A84C';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
-const GOF_REWARDED_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/3044234765';
-const rewarded = RewardedAd.createForAdRequest(GOF_REWARDED_ID, { requestNonPersonalizedAdsOnly: true });
+const GOF_REWARDED_ID = __DEV__ ? 'ca-app-pub-3940256099942544/5224354917' : 'ca-app-pub-6984775309510247/3044234765';
 
 const COLOURS: { key: SoulColour; hex: string; labelEN: string; labelZH: string }[] = [
   { key: 'red',    hex: '#ED2939', labelEN: 'RED',    labelZH: '红' },
@@ -59,11 +58,12 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
   const [colour,   setColour]   = useState<SoulColour>('red');
   const [profile,  setProfile]  = useState<GofProfile | null>(null);
   const [numbers,  setNumbers]  = useState<GofNumbers | null>(null);
-  const [adLoaded, setAdLoaded] = useState(false);
   const [sharing,  setSharing]  = useState(false);
   const [numbersRevealed, setNumbersRevealed] = useState(false);
   const [showAdPrompt, setShowAdPrompt] = useState(false);
-  const rewardEarned = useRef(false);
+
+  // Ad only requested while modal is open
+  const { show: showAd } = useRewardedAd(GOF_REWARDED_ID, visible);
 
   const slideAnim   = useRef(new Animated.Value(SH)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -89,41 +89,14 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
     }
   }, [visible]);
 
-  // ── Ad setup ──
-  useEffect(() => {
-    const unsubLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => setAdLoaded(true));
-    const unsubEarned = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
-      rewardEarned.current = true;
-      onUnlock();
-      if (profile) {
-        const inputs: GofInputs = { day, month, year, gender, colour };
-        setNumbers(generateNumbers(inputs, profile));
-        setNumbersRevealed(true);
-      }
-    });
-    const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
-      setAdLoaded(false);
-      rewarded.load();
-      if (!rewardEarned.current && profile) {
-        onUnlock();
-        const inputs: GofInputs = { day, month, year, gender, colour };
-        setNumbers(generateNumbers(inputs, profile));
-        setNumbersRevealed(true);
-      }
-      rewardEarned.current = false;
-    });
-    const unsubError  = rewarded.addAdEventListener(AdEventType.ERROR, () => {
-      setAdLoaded(false);
-      onUnlock();
-      if (profile) {
-        const inputs: GofInputs = { day, month, year, gender, colour };
-        setNumbers(generateNumbers(inputs, profile));
-        setNumbersRevealed(true);
-      }
-    });
-    rewarded.load();
-    return () => { unsubLoaded(); unsubEarned(); unsubClosed(); unsubError(); };
-  }, [profile, day, month, year, gender, colour]);
+
+  const reveal = () => {
+    if (!profile) return;
+    const inputs: GofInputs = { day, month, year, gender, colour };
+    setNumbers(generateNumbers(inputs, profile));
+    setNumbersRevealed(true);
+    onUnlock();
+  };
 
   const handleCast = () => {
     const inputs: GofInputs = { day, month, year, gender, colour };
@@ -133,29 +106,14 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
   };
 
   const handleCastCTA = () => {
-    if (gofUnlocked) {
-      // Already watched ad this session — go straight to numbers
-      if (profile) {
-        const inputs: GofInputs = { day, month, year, gender, colour };
-        setNumbers(generateNumbers(inputs, profile));
-        setNumbersRevealed(true);
-      }
-    } else {
-      setShowAdPrompt(true);
-    }
+    if (gofUnlocked) { reveal(); return; }
+    setShowAdPrompt(true);
   };
 
   const handleWatchAd = () => {
     setShowAdPrompt(false);
-    if (adLoaded) {
-      rewarded.show();
-    } else {
-      // Graceful fallback if ad not loaded
-      if (profile) {
-        const inputs: GofInputs = { day, month, year, gender, colour };
-        setNumbers(generateNumbers(inputs, profile));
-        setNumbersRevealed(true);
-      }
+    if (!showAd({ onReward: reveal })) reveal();
+  };
     }
   };
 
