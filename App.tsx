@@ -157,16 +157,19 @@ function MainApp() {
             safeAreaInsets={{ bottom: 0 }}
           >
             <Tab.Screen
+              key={`${game}-draw`}
               name="Draw"
               component={DrawScreen}
               options={{ tabBarLabel: ZH ? '开彩' : 'DRAW' }}
             />
             <Tab.Screen
+              key={`${game}-archive`}
               name="Archive"
               component={ArchiveScreen}
               options={{ tabBarLabel: ZH ? '记录' : 'ARCHIVE' }}
             />
             <Tab.Screen
+              key={`${game}-lab`}
               name="Lab"
               component={LabScreen}
               options={{ tabBarLabel: 'LAB' }}
