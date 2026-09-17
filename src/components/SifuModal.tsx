@@ -22,7 +22,9 @@ const FAINT = '#9A9A9A';
 const RULE  = '#E4DEDE';
 const { width: SW, height: SH } = Dimensions.get('window');
 
-const SIFU_AD_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/8566385106';
+const SIFU_AD_ID = __DEV__ ? TestIds.REWARDED : Platform.OS === 'ios'
+  ? 'ca-app-pub-6984775309510247/6853207551'
+  : 'ca-app-pub-6984775309510247/8566385106';
 
 const EXPLAINER_SEEN_KEY = 'sifu_explainer_seen';
 
@@ -215,7 +217,7 @@ export default function SifuModal({ visible, onClose, lang, sifuUnlocked, onUnlo
   const handleWatchAd = () => {
     const unlock = () => { onUnlock(); showResults(); };
     // No ad ready (or it expired) — unlock anyway.
-    if (!showAd({ onReward: unlock })) unlock();
+    if (!showAd({ onReward: unlock, onClosed: unlock })) unlock();
   };
 
   const handleClose = () => onClose();
@@ -383,7 +385,7 @@ export default function SifuModal({ visible, onClose, lang, sifuUnlocked, onUnlo
 
   // ── Screen: Ad Prompt — shown as floating modal overlay like GoF ─────────
   const AdPromptModal = (
-    <Modal visible={screen === 'adprompt'} transparent animationType="fade">
+    <View style={screen === 'adprompt' ? s.adPromptContainer : s.adPromptHidden}>
       <View style={s.adPromptOverlay}>
         <View style={s.adPromptBox}>
           <Text style={s.adPromptTitle}>{ZH ? '师父准备好了！' : 'SIFU IS READY'}</Text>
@@ -398,7 +400,7 @@ export default function SifuModal({ visible, onClose, lang, sifuUnlocked, onUnlo
           </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </View>
   );
 
   // ── Screen: Results ───────────────────────────────────────────────────────
@@ -627,6 +629,8 @@ const s = StyleSheet.create({
   addRowBtnText: { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 10, color: RED, letterSpacing: 2 },
 
   // Ad prompt — floating modal matching GoF style
+  adPromptContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 },
+  adPromptHidden:    { display: 'none' },
   adPromptOverlay:  { flex: 1, backgroundColor: 'rgba(26,26,26,0.7)', justifyContent: 'center', alignItems: 'center', padding: 32 },
   adPromptBox:      { backgroundColor: PAPER, borderTopWidth: 3, borderColor: RED, padding: 24, width: '100%' },
   adPromptTitle:    { fontFamily: 'IBMPlexMono-Bold', fontSize: 13, color: INK, letterSpacing: 2, marginBottom: 10 },

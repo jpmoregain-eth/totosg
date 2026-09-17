@@ -16,7 +16,10 @@ const RED = '#E24B4A';
 const BLUE = '#185FA5';
 const PURPLE = '#534AB7';
 
-const REWARDED_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/6047752765';
+import { Platform } from 'react-native';
+const REWARDED_ID = __DEV__ ? TestIds.REWARDED : Platform.OS === 'ios'
+  ? 'ca-app-pub-6984775309510247/9591051538'
+  : 'ca-app-pub-6984775309510247/6047752765';
 
 const STRATEGIES = ['Frequency', 'Mean Reversion', 'Positional Bias', 'Sum Range', 'Odd/Even', 'Cold Numbers'];
 const TEMPS = ['Hottest', 'Coldest', 'Balanced'];

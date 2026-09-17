@@ -19,7 +19,10 @@ const TINT  = '#FDF0F1';
 const { width: SCREEN_W } = Dimensions.get('window');
 const GRID_PADDING = 32; // 16px each side
 const CELL_SIZE = Math.floor((SCREEN_W - GRID_PADDING) / 7);
-const REWARDED_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/6047752765';
+import { Platform } from 'react-native';
+const REWARDED_ID = __DEV__ ? TestIds.REWARDED : Platform.OS === 'ios'
+  ? 'ca-app-pub-6984775309510247/9591051538'
+  : 'ca-app-pub-6984775309510247/6047752765';
 const rewarded = RewardedAd.createForAdRequest(REWARDED_ID, { requestNonPersonalizedAdsOnly: true });
 
 // ── Generator constants ───────────────────────────────────────────────────────

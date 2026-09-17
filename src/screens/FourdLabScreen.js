@@ -17,7 +17,10 @@ const RULE  = '#E4DEDE';
 const TINT  = '#FDF0F1';
 
 // ── AdMob ─────────────────────────────────────────────────────────────────────
-const REWARDED_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6984775309510247/6047752765';
+import { Platform } from 'react-native';
+const REWARDED_ID = __DEV__ ? TestIds.REWARDED : Platform.OS === 'ios'
+  ? 'ca-app-pub-6984775309510247/9591051538'
+  : 'ca-app-pub-6984775309510247/6047752765';
 const rewarded = RewardedAd.createForAdRequest(REWARDED_ID, { requestNonPersonalizedAdsOnly: true });
 
 // ── Generator constants ───────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, Image, TouchableOpacity, StyleSheet,
-  Modal, Dimensions,
+  Modal, Dimensions, Platform,
 } from 'react-native';
 
 import SplashScreen from './SplashScreen';
@@ -30,7 +30,9 @@ const DARK   = '#1a1a2e';
 const GOLD   = '#C9A84C';
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-const BANNER_ID = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-6984775309510247/2111888204';
+const BANNER_ID = __DEV__ ? TestIds.ADAPTIVE_BANNER : Platform.OS === 'ios'
+  ? 'ca-app-pub-6984775309510247/8741004290'
+  : 'ca-app-pub-6984775309510247/2111888204';
 
 // ── Bottom Tab Navigator ──────────────────────────────────────────────────────
 const Tab = createBottomTabNavigator();

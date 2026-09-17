@@ -25,7 +25,9 @@ const GOLD  = '#C9A84C';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
-const GOF_REWARDED_ID = __DEV__ ? 'ca-app-pub-3940256099942544/5224354917' : 'ca-app-pub-6984775309510247/3044234765';
+const GOF_REWARDED_ID = __DEV__ ? 'ca-app-pub-3940256099942544/5224354917' : Platform.OS === 'ios'
+  ? 'ca-app-pub-6984775309510247/3105534237'
+  : 'ca-app-pub-6984775309510247/3044234765';
 
 const COLOURS: { key: SoulColour; hex: string; labelEN: string; labelZH: string }[] = [
   { key: 'red',    hex: '#ED2939', labelEN: 'RED',    labelZH: '红' },
@@ -112,7 +114,7 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
 
   const handleWatchAd = () => {
     setShowAdPrompt(false);
-    if (!showAd({ onReward: reveal })) reveal();
+    if (!showAd({ onReward: reveal, onClosed: reveal })) reveal();
   };
 
   const handleShare = async () => {
@@ -347,7 +349,7 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
         )}
 
         {/* Ad prompt — no skip, mandatory */}
-        <Modal visible={showAdPrompt} transparent animationType="fade">
+        <View style={showAdPrompt ? s.adPromptContainer : s.adPromptHidden}>
           <View style={s.adPromptOverlay}>
             <View style={s.adPromptBox}>
               <Text style={s.adPromptTitle}>{ZH ? '财神需要供奉！' : 'MAKE YOUR OFFERING'}</Text>
@@ -359,7 +361,7 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
               </TouchableOpacity>
             </View>
           </View>
-        </Modal>
+        </View>
       </Modal>
     </>
   );
@@ -453,6 +455,8 @@ const s = StyleSheet.create({
   hiddenCard: { position: 'absolute', left: -9999, top: -9999 },
 
   // Ad prompt (mandatory, no skip)
+  adPromptContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 },
+  adPromptHidden:    { display: 'none' },
   adPromptOverlay: { flex: 1, backgroundColor: 'rgba(26,26,26,0.7)', justifyContent: 'center', alignItems: 'center', padding: 32 },
   adPromptBox:     { backgroundColor: PAPER, borderTopWidth: 3, borderColor: RED, padding: 24, width: '100%' },
   adPromptTitle:   { fontFamily: 'IBMPlexMono-Bold', fontSize: 13, color: INK, letterSpacing: 2, marginBottom: 10 },
