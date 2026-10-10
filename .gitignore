@@ -6,3 +6,4 @@ android/gradle.properties
 .env
 ios/
 android/app/.cxx/
+android/app/.cxx/
