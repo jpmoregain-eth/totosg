@@ -13,6 +13,7 @@ import { fetchGofConfig, GofConfig } from './src/lib/gofConfig';
 import { requestNotificationPermission, getFCMToken, setupForegroundHandler } from './src/lib/notifications';
 import GofModal from './src/components/GofModal';
 import SifuModal from './src/components/SifuModal';
+import MingModal from './src/components/MingModal';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -71,6 +72,8 @@ function MainApp() {
   const [sifuVisible, setSifuVisible]     = useState(false);
   const [sifuUnlocked, setSifuUnlocked]   = useState(false);
   const [gofUnlocked, setGofUnlocked]     = useState(false);
+  const [mingVisible, setMingVisible]     = useState(false);
+  const [mingUnlocked, setMingUnlocked]   = useState(false);
 
   useEffect(() => {
     fetchGofConfig().then(setGofConfig).catch(() => {});
@@ -122,6 +125,11 @@ function MainApp() {
             <TouchableOpacity style={s.featureBtnSifu} onPress={() => setSifuVisible(true)} activeOpacity={0.8}>
               <Text style={s.featureBtnCharSifu}>师</Text>
               <Text style={s.featureBtnLabelSifu}>SIFU</Text>
+            </TouchableOpacity>
+            {/* 命 Ming button — translucent fill, white text, straight */}
+            <TouchableOpacity style={s.featureBtnMing} onPress={() => setMingVisible(true)} activeOpacity={0.8}>
+              <Text style={s.featureBtnCharMing}>命</Text>
+              <Text style={s.featureBtnLabelMing}>MING</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -216,6 +224,13 @@ function MainApp() {
         sifuUnlocked={sifuUnlocked}
         onUnlock={() => setSifuUnlocked(true)}
       />
+      <MingModal
+        visible={mingVisible}
+        onClose={() => setMingVisible(false)}
+        lang={lang as 'EN' | 'ZH'}
+        mingUnlocked={mingUnlocked}
+        onUnlock={() => setMingUnlocked(true)}
+      />
     </View>
   );
 }
@@ -247,7 +262,7 @@ const s = StyleSheet.create({
   headerLeft:  {},
   headerTitle: { fontFamily: 'ArchivoNarrow-Bold', fontSize: 26, color: PAPER, letterSpacing: 0.5, lineHeight: 30 },
   headerSub:   { fontFamily: 'IBMPlexMono-Medium', fontSize: 9, color: 'rgba(255,255,255,0.65)', letterSpacing: 2, marginTop: 2 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 5 },
 
   // Lang toggle
   langToggle:    { flexDirection: 'column', borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)', marginRight: 4 },
@@ -257,14 +272,19 @@ const s = StyleSheet.create({
   langTextActive:{ color: RED },
 
   // 财 CaiShen button — white fill, red char, rotated
-  featureBtnCai:      { backgroundColor: PAPER, paddingHorizontal: 7, paddingVertical: 4, alignItems: 'center', minWidth: 52, transform: [{ rotate: '-12deg' }] },
+  featureBtnCai:      { backgroundColor: PAPER, paddingHorizontal: 7, paddingVertical: 4, alignItems: 'center', minWidth: 44, transform: [{ rotate: '-12deg' }] },
   featureBtnCharCai:  { fontFamily: 'ArchivoNarrow-Bold', fontSize: 22, color: RED, lineHeight: 26 },
   featureBtnLabelCai: { fontFamily: 'IBMPlexMono-Regular', fontSize: 7, color: RED, letterSpacing: 1 },
 
   // 师 Sifu button — outline only, white text, straight
-  featureBtnSifu:      { borderWidth: 1.5, borderColor: PAPER, paddingHorizontal: 7, paddingVertical: 4, alignItems: 'center', minWidth: 52 },
+  featureBtnSifu:      { borderWidth: 1.5, borderColor: PAPER, paddingHorizontal: 7, paddingVertical: 4, alignItems: 'center', minWidth: 44 },
   featureBtnCharSifu:  { fontFamily: 'ArchivoNarrow-Bold', fontSize: 22, color: PAPER, lineHeight: 26 },
   featureBtnLabelSifu: { fontFamily: 'IBMPlexMono-Regular', fontSize: 7, color: 'rgba(255,255,255,0.7)', letterSpacing: 1 },
+
+  // 命 Ming button — translucent fill, white text, straight
+  featureBtnMing:      { backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 7, paddingVertical: 4, alignItems: 'center', minWidth: 44 },
+  featureBtnCharMing:  { fontFamily: 'ArchivoNarrow-Bold', fontSize: 22, color: PAPER, lineHeight: 26 },
+  featureBtnLabelMing: { fontFamily: 'IBMPlexMono-Regular', fontSize: 7, color: 'rgba(255,255,255,0.85)', letterSpacing: 1 },
 
   // Game switcher
   gameSwitcher:      { flexDirection: 'row', backgroundColor: RED },

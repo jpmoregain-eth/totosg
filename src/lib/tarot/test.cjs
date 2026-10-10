@@ -1,0 +1,8 @@
+const assert=require('node:assert/strict');const crypto=require('node:crypto');const e=require('./build/tarotEngine.js');const bytes=n=>new Uint8Array(crypto.randomBytes(n));
+assert.equal(e.VERSION,'1.2');assert.equal(e.CARDS.length,22);assert.equal(e.QUESTIONS.length,6);
+let readings=0;
+for(const q of e.QUESTIONS){const prepared=e.prepareSpread(q.id,bytes);assert.equal(new Set(prepared.deck).size,22);const idx=Array.from({length:q.positions.length},(_,i)=>i);const draws=e.revealSelection(prepared,idx,bytes);for(const locale of ['en','zh']){const r=e.createReading(q.id,draws,locale,bytes,true);assert.equal(r.sections.length,draws.length);assert.ok(r.sections.every(s=>s.text.length>35));if(q.numbers){assert.equal(r.numbers.symbolism.cards.length,draws.length);assert.equal(r.numbers.symbolism.method,'symbolic-metadata-uniform-random');}else assert.equal(r.numbers,undefined);readings++;}}
+for(let cardId=0;cardId<22;cardId++)for(const q of e.QUESTIONS){const draws=q.positions.map((position,i)=>({cardId:(cardId+i)%22,orientation:i%2?'reversed':'upright',position}));const r=e.interpret(q.id,draws,'zh');assert.ok(r.sections.every(s=>s.text.includes('值得思考')));}
+for(let i=0;i<300;i++){const n=e.generateNumbers(bytes);assert.equal(new Set(n.fourD).size,3);assert.ok(n.fourD.every(s=>/^\d{4}$/.test(s)));for(const row of n.toto){assert.equal(row.length,6);assert.equal(new Set(row).size,6);assert.ok(row.every(x=>x>=1&&x<=49));}}
+assert.throws(()=>e.explainNumberSymbolism([{cardId:1,orientation:'upright',position:'a'},{cardId:1,orientation:'upright',position:'b'}]));
+console.log('PASS: '+readings+' bilingual sample readings; 132 Chinese card-topic combinations; 300 lottery format generations; symbolic metadata and validation');
