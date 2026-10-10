@@ -95,7 +95,7 @@ export default function MingModal({ visible, onClose, lang, mingUnlocked, onUnlo
 
   useEffect(() => {
     if (visible) {
-      setScreen(mingUnlocked ? 'questions' : 'adprompt');
+      setScreen('questions');
       setQuestion(null); setDeal(null); setFlipped([]); setSaved(false); setError(false);
       Animated.parallel([
         Animated.timing(opacityAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -115,8 +115,17 @@ export default function MingModal({ visible, onClose, lang, mingUnlocked, onUnlo
 
   const allFlipped = flipped.length > 0 && flipped.every(Boolean);
 
+  // Locked users get the ad prompt once every card is face-up (after the flip animation settles).
+  useEffect(() => {
+    if (screen !== 'draw' || !allFlipped || mingUnlocked) return;
+    const t = setTimeout(() => setScreen('adprompt'), 1000);
+    return () => clearTimeout(t);
+  }, [screen, allFlipped, mingUnlocked]);
+
+  const goToReading = () => setScreen(mingUnlocked ? 'result' : 'adprompt');
+
   const handleWatchAd = () => {
-    const unlock = () => { onUnlock(); setScreen('questions'); };
+    const unlock = () => { onUnlock(); setScreen('result'); };
     // No ad ready (or it expired) — unlock anyway, same as Sifu/Caishen.
     if (!showAd({ onReward: unlock, onClosed: unlock })) unlock();
   };
@@ -219,7 +228,7 @@ export default function MingModal({ visible, onClose, lang, mingUnlocked, onUnlo
       <TouchableOpacity
         style={[s.redBtnFull, !allFlipped && s.redBtnDisabled]}
         disabled={!allFlipped}
-        onPress={() => setScreen('result')}
+        onPress={goToReading}
       >
         <Text style={s.redBtnText}>{ZH ? '查看解读' : 'VIEW READING'}</Text>
       </TouchableOpacity>
@@ -343,14 +352,14 @@ export default function MingModal({ visible, onClose, lang, mingUnlocked, onUnlo
     <View style={screen === 'adprompt' ? s.adPromptContainer : s.adPromptHidden}>
       <View style={s.adPromptOverlay}>
         <View style={s.adPromptBox}>
-          <Text style={s.adPromptTitle}>{ZH ? '命运之牌已备好' : 'YOUR CARDS ARE READY'}</Text>
+          <Text style={s.adPromptTitle}>{ZH ? '解读已备好' : 'YOUR READING IS READY'}</Text>
           <Text style={s.adPromptBody}>
             {ZH ? '塔罗解读是免费的。一则短广告让它保持免费。' : 'The reading is free. One short ad keeps it that way.'}
           </Text>
           <TouchableOpacity style={s.adPromptBtn} onPress={handleWatchAd}>
             <Text style={s.adPromptBtnText}>{ZH ? '观看广告' : 'WATCH AD'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.adPromptBack} onPress={onClose}>
+          <TouchableOpacity style={s.adPromptBack} onPress={() => setScreen('draw')}>
             <Text style={s.adPromptBackText}>{ZH ? '返回' : 'BACK'}</Text>
           </TouchableOpacity>
         </View>
@@ -373,7 +382,7 @@ export default function MingModal({ visible, onClose, lang, mingUnlocked, onUnlo
           </View>
           <View style={s.screenContainer}>
             {screen === 'questions' && ScreenQuestions}
-            {screen === 'draw'      && ScreenDraw}
+            {(screen === 'draw' || screen === 'adprompt') && ScreenDraw}
             {screen === 'result'    && ScreenResult}
           </View>
         </Animated.View>
