@@ -69,7 +69,7 @@ export default function GofModal({ visible, onClose, fabX, fabY, fabSize, lang, 
 
   const slideAnim   = useRef(new Animated.Value(SH)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  const shareCardRef = useRef<ViewShot>(null);
+  const shareCardRef = useRef<React.ElementRef<typeof ViewShot>>(null);
 
   // ── Animate in/out ──
   useEffect(() => {

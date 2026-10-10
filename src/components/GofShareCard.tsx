@@ -29,8 +29,8 @@ export default function GofShareCard({ numbers, config, lang, flavourText, profi
   const ZH = lang === 'ZH';
 
   // Season label from config event
-  const seasonLabel = config.event
-    ? config.event.replace(/_/g, ' ').toUpperCase()
+  const seasonLabel = config.eventKey && config.eventKey !== 'default'
+    ? config.eventKey.replace(/_/g, ' ').toUpperCase()
     : 'CAISHEN';
 
   return (

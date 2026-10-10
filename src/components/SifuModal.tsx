@@ -163,7 +163,7 @@ export default function SifuModal({ visible, onClose, lang, sifuUnlocked, onUnlo
   const [fourdRows, setFourdRows] = useState<FourdRow[]>([{ id: 1, bigAmt: 1, smallAmt: 0, betType: 'ordinary', perms: 24, qty: 1 }]);
   const [fourdResult, setFourdResult] = useState<ReturnType<typeof calcFourdScore> | null>(null);
   const nextRowId = useRef(2);
-  const shareCardRef = useRef<ViewShot>(null);
+  const shareCardRef = useRef<React.ElementRef<typeof ViewShot>>(null);
 
   const slideAnim   = useRef(new Animated.Value(SH)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
