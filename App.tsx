@@ -104,9 +104,18 @@ function MainApp() {
         <View style={s.header}>
           <View style={s.headerLeft}>
             <Text style={s.headerTitle}>SG LOTTERY</Text>
-            <Text style={s.headerSub}>NOTICE BOARD · SINGAPORE POOLS</Text>
+            <Text style={s.headerSub}>SINGAPORE POOLS</Text>
           </View>
           <View style={s.headerRight}>
+            {/* EN/中 toggle */}
+            <View style={s.langToggle}>
+              <TouchableOpacity onPress={() => setLang('EN')} style={[s.langBtn, lang === 'EN' && s.langBtnActive]}>
+                <Text style={[s.langText, lang === 'EN' && s.langTextActive]}>EN</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setLang('ZH')} style={[s.langBtn, lang === 'ZH' && s.langBtnActive]}>
+                <Text style={[s.langText, lang === 'ZH' && s.langTextActive]}>中</Text>
+              </TouchableOpacity>
+            </View>
             {/* 財 GoF button — white bg, red text, rotated */}
             <TouchableOpacity style={s.featureBtnCai} onPress={handleGofPress} activeOpacity={0.8}>
               <Text style={s.featureBtnCharCai}>财</Text>
@@ -123,16 +132,6 @@ function MainApp() {
               <Text style={s.featureBtnLabelMing}>MING</Text>
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* ── Slim EN/中 language row ── */}
-        <View style={s.langRow}>
-          <TouchableOpacity onPress={() => setLang('EN')} style={[s.langBtn, lang === 'EN' && s.langBtnActive]}>
-            <Text style={[s.langText, lang === 'EN' && s.langTextActive]}>EN</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setLang('ZH')} style={[s.langBtn, lang === 'ZH' && s.langBtnActive]}>
-            <Text style={[s.langText, lang === 'ZH' && s.langTextActive]}>中</Text>
-          </TouchableOpacity>
         </View>
 
         {/* ── 4D / TOTO game switcher ── */}
@@ -263,14 +262,14 @@ const s = StyleSheet.create({
   headerLeft:  {},
   headerTitle: { fontFamily: 'ArchivoNarrow-Bold', fontSize: 26, color: PAPER, letterSpacing: 0.5, lineHeight: 30 },
   headerSub:   { fontFamily: 'IBMPlexMono-Medium', fontSize: 9, color: 'rgba(255,255,255,0.65)', letterSpacing: 2, marginTop: 2 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
-  // Lang row — slim, full width, sits under the header
-  langRow:       { flexDirection: 'row', backgroundColor: RED, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-  langBtn:       { flex: 1, paddingVertical: 4, alignItems: 'center', borderBottomWidth: 2, borderColor: 'transparent' },
-  langBtnActive: { borderColor: PAPER },
-  langText:      { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 10, color: 'rgba(255,255,255,0.55)', letterSpacing: 2 },
-  langTextActive:{ color: PAPER },
+  // Lang toggle
+  langToggle:    { flexDirection: 'column', borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)', marginRight: 4 },
+  langBtn:       { paddingHorizontal: 8, paddingVertical: 3 },
+  langBtnActive: { backgroundColor: PAPER },
+  langText:      { fontFamily: 'IBMPlexMono-SemiBold', fontSize: 11, color: 'rgba(255,255,255,0.7)' },
+  langTextActive:{ color: RED },
 
   // 财 CaiShen button — white fill, red char, rotated
   featureBtnCai:      { backgroundColor: PAPER, paddingHorizontal: 7, paddingVertical: 4, alignItems: 'center', minWidth: 52, transform: [{ rotate: '-12deg' }] },
