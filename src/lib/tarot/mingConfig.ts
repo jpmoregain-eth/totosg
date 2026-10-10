@@ -11,31 +11,31 @@ export const MING_AD_ID = __DEV__ ? TestIds.REWARDED : Platform.OS === 'ios'
   : 'ca-app-pub-6984775309510247/2353577383';
 
 // ── Card images, indexed by engine cardId (0..21) ─────────────────────────────
-export const CARD_BACK = require('../../assets/tarot/tarot_card_back.png');
+export const CARD_BACK = require('../../assets/tarot/tarot_card_back.webp');
 
 export const CARD_IMAGES = [
-  require('../../assets/tarot/major_00_the_fool.png'),
-  require('../../assets/tarot/major_01_the_magician.png'),
-  require('../../assets/tarot/major_02_the_high_priestess.png'),
-  require('../../assets/tarot/major_03_the_empress.png'),
-  require('../../assets/tarot/major_04_the_emperor.png'),
-  require('../../assets/tarot/major_05_the_hierophant.png'),
-  require('../../assets/tarot/major_06_the_lovers.png'),
-  require('../../assets/tarot/major_07_the_chariot.png'),
-  require('../../assets/tarot/major_08_strength.png'),
-  require('../../assets/tarot/major_09_the_hermit.png'),
-  require('../../assets/tarot/major_10_wheel_of_fortune.png'),
-  require('../../assets/tarot/major_11_justice.png'),
-  require('../../assets/tarot/major_12_the_hanged_man.png'),
-  require('../../assets/tarot/major_13_death.png'),
-  require('../../assets/tarot/major_14_temperance.png'),
-  require('../../assets/tarot/major_15_the_devil.png'),
-  require('../../assets/tarot/major_16_the_tower.png'),
-  require('../../assets/tarot/major_17_the_star.png'),
-  require('../../assets/tarot/major_18_the_moon.png'),
-  require('../../assets/tarot/major_19_the_sun.png'),
-  require('../../assets/tarot/major_20_judgement.png'),
-  require('../../assets/tarot/major_21_the_world.png'),
+  require('../../assets/tarot/major_00_the_fool.webp'),
+  require('../../assets/tarot/major_01_the_magician.webp'),
+  require('../../assets/tarot/major_02_the_high_priestess.webp'),
+  require('../../assets/tarot/major_03_the_empress.webp'),
+  require('../../assets/tarot/major_04_the_emperor.webp'),
+  require('../../assets/tarot/major_05_the_hierophant.webp'),
+  require('../../assets/tarot/major_06_the_lovers.webp'),
+  require('../../assets/tarot/major_07_the_chariot.webp'),
+  require('../../assets/tarot/major_08_strength.webp'),
+  require('../../assets/tarot/major_09_the_hermit.webp'),
+  require('../../assets/tarot/major_10_wheel_of_fortune.webp'),
+  require('../../assets/tarot/major_11_justice.webp'),
+  require('../../assets/tarot/major_12_the_hanged_man.webp'),
+  require('../../assets/tarot/major_13_death.webp'),
+  require('../../assets/tarot/major_14_temperance.webp'),
+  require('../../assets/tarot/major_15_the_devil.webp'),
+  require('../../assets/tarot/major_16_the_tower.webp'),
+  require('../../assets/tarot/major_17_the_star.webp'),
+  require('../../assets/tarot/major_18_the_moon.webp'),
+  require('../../assets/tarot/major_19_the_sun.webp'),
+  require('../../assets/tarot/major_20_judgement.webp'),
+  require('../../assets/tarot/major_21_the_world.webp'),
 ] as const;
 
 // ── Questions ─────────────────────────────────────────────────────────────────

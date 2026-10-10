@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, Image, Modal, StyleSheet, ScrollView,
   TouchableOpacity, Animated, Dimensions,
-  Share, ActivityIndicator,
+  Share, ActivityIndicator, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';

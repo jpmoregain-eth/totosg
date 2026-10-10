@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Animated, Dimensions, ActivityIndicator,
+  ScrollView, Animated, Dimensions, ActivityIndicator, Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TestIds } from 'react-native-google-mobile-ads';
