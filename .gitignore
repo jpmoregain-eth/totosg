@@ -5,3 +5,4 @@ android/.gradle/
 android/gradle.properties
 .env
 ios/
+android/app/.cxx/
