@@ -7,3 +7,4 @@ android/gradle.properties
 ios/
 android/app/.cxx/
 android/app/.cxx/
+android/build/reports/
