@@ -9,23 +9,12 @@
 
 # Add any project specific keep options here:
 
-# React Native
--keep class com.facebook.react.** { *; }
--keep class com.facebook.hermes.** { *; }
--keep class com.facebook.jni.** { *; }
+# React Native, Hermes, Firebase, Google Mobile Ads and the other native
+# libraries ship their own consumer ProGuard/R8 rules, so blanket
+# `-keep class ... { *; }` rules are not needed here. Keeping whole packages
+# prevents R8 from obfuscating them and drags down Play Console's
+# DEX optimization score.
 
-# Firebase
--keep class com.google.firebase.** { *; }
--keep class com.google.android.gms.** { *; }
-
-# AdMob
--keep class com.google.android.gms.ads.** { *; }
--keep class io.invertase.googlemobileads.** { *; }
-
-# React Native Firebase
--keep class io.invertase.firebase.** { *; }
-
-# Keep JS interface
--keepattributes *Annotation*
+# Keep line numbers so crash reports stay readable.
 -keepattributes SourceFile,LineNumberTable
--keep public class * extends java.lang.Exception
+-renamesourcefileattribute SourceFile
