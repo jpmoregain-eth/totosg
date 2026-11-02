@@ -18,3 +18,13 @@
 # Keep line numbers so crash reports stay readable.
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# react-native-screens: do NOT let R8 rename its Fragment classes.
+# MainActivity installs RNScreensFragmentFactory, which recognises screen
+# fragments being restored by checking that the class name starts with
+# "com.swmansion.rnscreens". When R8 renamed them (e.g. to "K1.f") that
+# check failed, Android rebuilt a real ScreenFragment and the app crashed
+# with "Screen fragments should never be restored" (v2.8.1, versionCode 25).
+# The library does not ship its own consumer rules for this, so keep the
+# names here. Shrinking and optimisation are still allowed.
+-keepnames class com.swmansion.rnscreens.** extends androidx.fragment.app.Fragment
